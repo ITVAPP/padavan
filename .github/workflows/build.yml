@@ -1,17 +1,15 @@
 name: build
-
 on:
   push:
     branches:
     - "*"
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [K2P, K2P-USB]
+        target: [JCG-AC860M]
         toolchain: [mipsel-linux-musl]
     steps:
       - uses: actions/checkout@main
@@ -28,6 +26,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
+      - name: Set script permissions
+        run: |
+          chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh
+          chmod 755 trunk/user/scripts/files/usr/bin/flytrap.sh
+          echo "已设置脚本权限为 755"
       - name: Start build firmware
         run: |
           make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }}

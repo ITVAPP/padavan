@@ -13,15 +13,14 @@ config_test:
 
 configure:
 	( cd $(SRC_NAME) ; \
-	./autogen.sh ; \
 	./configure \
 		--prefix=/usr \
 		--with-kmod=no \
-		--enable-static \
 		--disable-shared \
-		CFLAGS="-O2 -fPIC" \
-		LDFLAGS="-fPIC" \
-		$(if $(CONFIG_IPV6),--enable-ipv6,--disable-ipv6) \
+		--enable-static \
+		--without-mnl \     # 关键修改在这里
+		CFLAGS="-O2" \
+		LDFLAGS="" \
 		--host=$(HOST_TARGET) \
 		--build=$(HOST_BUILD) ; \
 	)

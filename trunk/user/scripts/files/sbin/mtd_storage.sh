@@ -285,6 +285,8 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 #ipset add gfwlist 109.239.140.0/24
 #ipset add gfwlist 149.154.160.0/20
 
+# 蜜罐防火墙规则，将访问 20,21,22,23,3389 端口的人列入黑名单，启用就去掉规则前的 # 号
+# nice -n 18 /usr/bin/flytrap.sh
 
 EOF
 		chmod 755 "$script_started"
@@ -331,6 +333,10 @@ EOF
 ### Solution for UPnP working in case no delicated (no WHITE) external IP adress
 #echo "ext_ip=1.1.1.1" >> /etc/miniupnpd.conf && killall miniupnpd && miniupnpd -f /etc/miniupnpd.conf
 
+# 启用 cloudflare ddns 更新IP解析， 使用 API Token 方式 或 使用 Email + API Key 方式
+# nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com xxxxxxxxxxxxxxxx
+# nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com '' user@example.com xxxxxxxxxxxxxxxx
+
 EOF
 		chmod 755 "$script_postw"
 	fi
@@ -346,6 +352,10 @@ EOF
 ### \$2 - elapsed time (s) from previous state
 
 logger -t "di" "Internet state: \$1, elapsed time: \$2s."
+
+# 启用 cloudflare ddns 更新IP解析， 使用 API Token 方式 或 使用 Email + API Key 方式
+# nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com xxxxxxxxxxxxxxxx
+# nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com '' user@example.com xxxxxxxxxxxxxxxx
 
 EOF
 		chmod 755 "$script_inets"
@@ -507,6 +517,9 @@ dhcp-option=252,"\n"
 ### Do NOT forward queries with no domain part
 domain-needed
 
+# 启用并发查询DNS
+all-servers
+
 EOF
 	if [ -f /usr/bin/vlmcsd ]; then
 		cat >> "$user_dnsmasq_conf" <<EOF
@@ -541,6 +554,12 @@ EOF
 # Custom user servers file for dnsmasq
 # Example:
 #server=/mit.ru/izmuroma.ru/10.25.11.30
+# DNS服务地址:
+server=1.1.1.1
+server=8.8.8.8
+server=119.29.29.29
+server=223.6.6.6
+server=180.76.76.76
 
 EOF
 		chmod 644 "$user_dnsmasq_servers"
@@ -565,9 +584,7 @@ EOF
 # Please add only new custom system!
 
 ### Example for twoDNS.de:
-
 #system custom@http_srv_basic_auth
-#  ssl
 #  checkip-url checkip.two-dns.de /
 #  server-name update.twodns.de
 #  server-url /update\?hostname=

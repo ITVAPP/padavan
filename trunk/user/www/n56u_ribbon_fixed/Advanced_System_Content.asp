@@ -260,6 +260,12 @@ function updateDateTime()
 <style>
     .table th, .table td{vertical-align: middle;}
     .table input, .table select {margin-bottom: 0px;}
+    /* 隐藏启用定时重启的行 */
+    #reboot_schedule_enable_tr,
+    #reboot_schedule_date_tr,
+    #reboot_schedule_time_tr {
+        display: none;
+    }
 </style>
 </head>
 

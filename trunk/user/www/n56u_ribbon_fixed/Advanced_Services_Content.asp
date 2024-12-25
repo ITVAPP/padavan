@@ -94,7 +94,47 @@ function initial(){
 	if(!found_app_iperf3()){
 		showhide_div('row_iperf3', 0);
 	}
-	
+
+        // 检查和添加定时任务
+        checkAndAddCronTasks();
+}
+
+function checkAndAddCronTasks() {
+    // 获取定时任务输入框
+    var cronTextarea = document.form['crontab.login'];
+    if (!cronTextarea) return; // 如果没有找到文本框，退出函数
+
+    // 获取输入框内容并按行分割
+    var currentTasks = cronTextarea.value.split("\n").map(line => line.trim());
+
+    // 定义需要检查的任务（默认注释）
+    var requiredTasks = [
+        { 
+            keyword: "reboot", 
+            task: "# 28 5 * * * reboot  # 每天凌晨5点28分重启（默认禁用，去掉 # 可启用）" 
+        },
+        { 
+            keyword: "flytrap.sh", 
+            task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh log_blocked_ips  # 每 30 分钟执行一次检查防火墙规则，并记录被加入黑名单的IP（默认禁用，去掉 # 可启用）" 
+        }
+    ];
+
+    var tasksToAdd = [];
+
+    // 检查每个关键词是否存在
+    requiredTasks.forEach(function (requiredTask) {
+        var exists = currentTasks.some(function (line) {
+            return line.includes(requiredTask.keyword); // 判断是否包含关键词
+        });
+        if (!exists) {
+            tasksToAdd.push(requiredTask.task); // 如果缺失，添加到待添加列表
+        }
+    });
+
+    // 如果有需要添加的任务，将它们加入到输入框中
+    if (tasksToAdd.length > 0) {
+        cronTextarea.value = cronTextarea.value.trim() + "\n" + tasksToAdd.join("\n");
+    }
 }
 
 function applyRule(){

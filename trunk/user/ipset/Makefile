@@ -1,27 +1,38 @@
-include $(ROOTDIR)/rules.mk
+THISDIR = $(shell pwd)
+SRC_NAME = ipset-7.11
 
-PKG_NAME:=ipset
-PKG_VERSION:=7.11
+all: config_test
+	$(MAKE) -C $(SRC_NAME)
 
-PKG_FIXUP:=autoreconf
+config_test:
+	( if [ -f ./config_done ]; then \
+		echo "the same configuration"; \
+	else \
+		make configure && touch config_done; \
+	fi )
 
-include $(INCLUDE_DIR)/package.mk
+configure:
+	( cd $(SRC_NAME) ; \
+	./autogen.sh ; \
+	./configure \
+		--prefix=/usr \
+		--with-kmod=no \
+		--enable-static \
+		--disable-shared \
+		CFLAGS="-O2 -fPIC" \
+		LDFLAGS="-fPIC" \
+		$(if $(CONFIG_IPV6),--enable-ipv6,--disable-ipv6) \
+		--host=$(HOST_TARGET) \
+		--build=$(HOST_BUILD) ; \
+	)
 
-SRC_DIR=./ipset-7.11
-
-CONFIGURE_ARGS += \
-	--enable-static \
-	--disable-shared \
-	--with-kmod=yes \
-	--with-kbuild=$(ROOTDIR)/$(LINUXDIR)
-
-define Build/Compile
-	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS)
-	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS) LDFLAGS= modules
-endef
-
-$(eval $(call BuildPackage,ipset))
+clean:
+	if [ -f $(SRC_NAME)/Makefile ] ; then \
+		$(MAKE) -C $(SRC_NAME) distclean ; \
+	fi ; \
+	rm -f config_done
 
 romfs:
-	$(INSTALL_DIR) $(ROMFSDIR)/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ipset $(ROMFSDIR)/sbin/ipset
+	$(ROMFSINST) $(THISDIR)/$(SRC_NAME)/src/ipset /sbin/ipset
+
+.PHONY: all configure config_test clean romfs

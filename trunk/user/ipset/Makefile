@@ -1,37 +1,27 @@
-THISDIR = $(shell pwd)
-SRC_NAME = ipset-7.11
+include $(ROOTDIR)/rules.mk
 
-all: config_test
-	$(MAKE) -C $(SRC_NAME)
+PKG_NAME:=ipset
+PKG_VERSION:=7.11
 
-config_test:
-	( if [ -f ./config_done ]; then \
-		echo "the same configuration"; \
-	else \
-		make configure && touch config_done; \
-	fi )
+PKG_FIXUP:=autoreconf
 
-configure:
-	( cd $(SRC_NAME) ; \
-	./configure \
-		--prefix=/usr \
-		--with-kmod=no \
-		--disable-shared \
-		--enable-static \
-		--without-mnl \     # 关键修改在这里
-		CFLAGS="-O2" \
-		LDFLAGS="" \
-		--host=$(HOST_TARGET) \
-		--build=$(HOST_BUILD) ; \
-	)
+include $(INCLUDE_DIR)/package.mk
 
-clean:
-	if [ -f $(SRC_NAME)/Makefile ] ; then \
-		$(MAKE) -C $(SRC_NAME) distclean ; \
-	fi ; \
-	rm -f config_done
+SRC_DIR=./ipset-7.11
+
+CONFIGURE_ARGS += \
+	--enable-static \
+	--disable-shared \
+	--with-kmod=yes \
+	--with-kbuild=$(ROOTDIR)/$(LINUXDIR)
+
+define Build/Compile
+	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS)
+	$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS) LDFLAGS= modules
+endef
+
+$(eval $(call BuildPackage,ipset))
 
 romfs:
-	$(ROMFSINST) $(THISDIR)/$(SRC_NAME)/src/ipset /sbin/ipset
-
-.PHONY: all configure config_test clean romfs
+	$(INSTALL_DIR) $(ROMFSDIR)/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/ipset $(ROMFSDIR)/sbin/ipset

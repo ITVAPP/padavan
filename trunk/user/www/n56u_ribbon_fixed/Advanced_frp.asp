@@ -148,9 +148,6 @@ function done_validating(action){
 									<tr> <th>frpc<#running_status#></th>
                                             <td id="frpc_status" colspan="2"></td>
                                         </tr>
-										<tr> <th>frps<#running_status#></th>
-                                            <td id="frps_status" colspan="2"></td>
-                                        </tr>
 										<tr>
 											<th width="30%"><a class="help_tooltip" href="javascript: void(0)" onmouseover="openTooltip(this, 26, 9);">启用frpc</a></th>
 											<td>
@@ -162,20 +159,6 @@ function done_validating(action){
 												<div style="position: absolute; margin-left: -10000px;">
 													<input type="radio" value="1" name="frpc_enable" id="frpc_enable_1" class="input" value="1" <% nvram_match_x("", "frpc_enable", "1", "checked"); %> /><#checkbox_Yes#>
 													<input type="radio" value="0" name="frpc_enable" id="frpc_enable_0" class="input" value="0" <% nvram_match_x("", "frpc_enable", "0", "checked"); %> /><#checkbox_No#>
-												</div>
-											</td>
-										</tr>
-												<tr>
-											<th width="30%"><a class="help_tooltip" href="javascript: void(0)" onmouseover="openTooltip(this, 26, 9);">启用frps</a></th>
-											<td>
-													<div class="main_itoggle">
-													<div id="frps_enable_on_of">
-														<input type="checkbox" id="frps_enable_fake" <% nvram_match_x("", "frps_enable", "1", "value=1 checked"); %><% nvram_match_x("", "frps_enable", "0", "value=0"); %>  />
-													</div>
-												</div>
-												<div style="position: absolute; margin-left: -10000px;">
-													<input type="radio" value="1" name="frps_enable" id="frps_enable_1" class="input" value="1"  <% nvram_match_x("", "frps_enable", "1", "checked"); %> /><#checkbox_Yes#>
-													<input type="radio" value="0" name="frps_enable" id="frps_enable_0" class="input" value="0"  <% nvram_match_x("", "frps_enable", "0", "checked"); %> /><#checkbox_No#>
 												</div>
 											</td>
 										</tr>

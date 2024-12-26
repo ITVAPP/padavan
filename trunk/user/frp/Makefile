@@ -1,7 +1,6 @@
 THISDIR := $(shell pwd)
 FRP_VER := 0.60.0
 FRP_URL_BASE := https://github.com/fatedier/frp/releases/download
-
 FRP_NAME := frp_$(FRP_VER)_linux_mipsle
 FRP_URL := $(FRP_URL_BASE)/v$(FRP_VER)/$(FRP_NAME).tar.gz
 
@@ -15,7 +14,13 @@ download_test:
 
 extra_test:
 	( if [ ! -d $(FRP_NAME) ]; then \
-		tar xf $(FRP_NAME).tar.gz; \
+		mkdir -p $(FRP_NAME); \
+		if [ "$(CONFIG_FIRMWARE_INCLUDE_FRPC)" = "y" ]; then \
+			tar xf $(FRP_NAME).tar.gz $(FRP_NAME)/frpc $(FRP_NAME)/frpc.toml $(FRP_NAME)/LICENSE; \
+		fi; \
+		if [ "$(CONFIG_FIRMWARE_INCLUDE_FRPS)" = "y" ]; then \
+			tar xf $(FRP_NAME).tar.gz $(FRP_NAME)/frps $(FRP_NAME)/frps.toml $(FRP_NAME)/LICENSE; \
+		fi; \
 	fi )
 
 clean:

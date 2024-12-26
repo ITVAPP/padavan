@@ -23,11 +23,8 @@
 <script>
 var $j = jQuery.noConflict();
 <% frpc_status(); %>
-<% frps_status(); %>
 $j(document).ready(function() {
     init_itoggle('frpc_enable');
-	init_itoggle('frps_enable');
-
 });
 
 </script>
@@ -41,7 +38,6 @@ function initial(){
 	show_footer();
 
 fill_status(frpc_status());
-fill_status2(frps_status());
 	if (!login_safe())
 		textarea_scripts_enabled(0);
 }
@@ -57,14 +53,6 @@ function fill_status(status_code){
 	else if (status_code == 1)
 		stext = "<#Running#>";
 	$("frpc_status").innerHTML = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' + stext + '</span>';
-}
-function fill_status2(status_code){
-	var stext = "Unknown";
-	if (status_code == 0)
-		stext = "<#Stopped#>";
-	else if (status_code == 1)
-		stext = "<#Running#>";
-	$("frps_status").innerHTML = '<span class="label label-' + (status_code != 0 ? 'success' : 'warning') + '">' + stext + '</span>';
 }
 
 function applyRule(){
@@ -164,7 +152,7 @@ function done_validating(action){
 										</tr>
 										<tr id="row_post_wan_script">
 											<td colspan="2">
-												<i class="icon-hand-right"></i> <a href="javascript:spoiler_toggle('script2')"><span>frp脚本-请自行配置脚本里的相关参数</span></a>
+												<i class="icon-hand-right"></i> <a href="javascript:spoiler_toggle('script2')"><span>请自行配置脚本里的相关参数</span></a>
 												<div id="script2">
 													<textarea rows="18" wrap="off" spellcheck="false" maxlength="314571" class="span12" name="scripts.frp_script.sh" style="font-family:'Courier New'; font-size:12px;"><% nvram_dump("scripts.frp_script.sh",""); %></textarea>
 												</div>

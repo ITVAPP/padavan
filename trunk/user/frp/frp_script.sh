@@ -1,6 +1,5 @@
 #!/bin/sh
-#from hiboy
-killall frpc frps
+killall frpc
 mkdir -p /tmp/frp
 #启动frp功能后会运行以下脚本
 #frp项目地址教程: https://github.com/fatedier/frp/blob/master/README_zh.md
@@ -98,32 +97,8 @@ health_check_timeout_s = 3
 # ====================
 EOF
 
-#请手动配置【外部网络 (WAN) - 端口转发 (UPnP)】开启 WAN 外网端口
-cat > "/tmp/frp/myfrps.ini" <<-\EOF
-# ==========服务端配置：==========
-[common]
-bind_port = 7000
-dashboard_port = 7500
-# dashboard 用户名密码，默认都为 admin
-dashboard_user = admin
-dashboard_pwd = admin
-vhost_http_port = 88
-token = 12345
-subdomain_host = frps.com
-max_pool_count = 50
-#log_file = /dev/null
-#log_level = info
-#log_max_days = 3
-# ====================
-EOF
-
 #启动：
 frpc_enable=`nvram get frpc_enable`
-frps_enable=`nvram get frps_enable`
 if [ "$frpc_enable" = "1" ] ; then
     frpc -c /tmp/frp/myfrpc.ini 2>&1 &
 fi
-if [ "$frps_enable" = "1" ] ; then
-    frps -c /tmp/frp/myfrps.ini 2>&1 &
-fi
- 

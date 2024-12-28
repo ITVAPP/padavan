@@ -262,9 +262,36 @@ func_fill()
 #modprobe ip_set_bitmap_ip
 #modprobe ip_set_list_set
 #modprobe xt_set
-echo 4096 131072  6291456 > /proc/sys/net/ipv4/tcp_rmem
-echo 4194304 >/proc/sys/net/core/rmem_max
-echo 212992 > /proc/sys/net/core/rmem_default
+
+# 优化设置
+echo 0 > /proc/sys/net/netfilter/nf_conntrack_checksum
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+echo 1 > /proc/sys/net/ipv4/route/gc_elasticity
+echo 3 > /proc/sys/net/ipv4/tcp_fastopen
+echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose
+echo 18 > /proc/sys/net/ipv4/route/gc_interval
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_syn_sent
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_syn_recv
+echo 580 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_fin_wait
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_close_wait
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_last_ack
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_time_wait
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_close
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_udp_timeout
+echo 58 > /proc/sys/net/netfilter/nf_conntrack_udp_timeout_stream
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_icmp_timeout
+echo 580 > /proc/sys/net/netfilter/nf_conntrack_generic_timeout
+echo 580 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_timeout_established
+echo 18 > /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout
+echo 88 > /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream
+echo 18 > /proc/sys/net/netfilter/nf_conntrack_log_invalid
+echo 168888 > /proc/sys/net/netfilter/nf_conntrack_max
+echo 4096 65536 16777216 > /proc/sys/net/core/rmem_max
+echo 4096 65536 16777216 > /proc/sys/net/core/wmem_max
+echo 4096 65536 16777216 > /proc/sys/net/ipv4/tcp_rmem
+echo 4096 65536 16777216 > /proc/sys/net/ipv4/tcp_wmem
 
 ### drop caches
 sync && echo 3 > /proc/sys/vm/drop_caches

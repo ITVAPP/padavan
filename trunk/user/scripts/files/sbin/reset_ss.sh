@@ -73,39 +73,11 @@ echo 1        > /proc/sys/kernel/panic
 echo 1        > /proc/sys/kernel/panic_on_oops
 echo 0        > /proc/sys/vm/panic_on_oom
 
-# 优化连接
-echo 168888 > /proc/sys/net/netfilter/nf_conntrack_max
-echo 18 > /proc/sys/vm/swappiness
-echo 0 > /proc/sys/net/netfilter/nf_conntrack_checksum
-echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
-echo 1 > /proc/sys/net/netfilter/nf_conntrack_tcp_loose
-echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+# 优化设置
 echo 1 > /proc/sys/vm/overcommit_memory
+echo 18 > /proc/sys/vm/swappiness
 echo 58 > /proc/sys/vm/dirty_background_ratio
 echo 88 > /proc/sys/vm/dirty_ratio
-echo 1 > /proc/sys/net/ipv4/route/gc_elasticity
-echo 18 > /proc/sys/net/ipv4/route/gc_interval
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_syn_sent
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_syn_recv
-echo 580 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_fin_wait
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_close_wait
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_last_ack
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_time_wait
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_close
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_udp_timeout
-echo 58 > /proc/sys/net/netfilter/nf_conntrack_udp_timeout_stream
-echo 18 > /proc/sys/net/netfilter/nf_conntrack_icmp_timeout
-echo 580 > /proc/sys/net/netfilter/nf_conntrack_generic_timeout
-echo 580 > /proc/sys/net/ipv4/netfilter/ip_conntrack_tcp_timeout_established
-echo 18 > /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout
-echo 88 > /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream
-echo 4096 65536 16777216 > /proc/sys/net/core/rmem_max
-echo 4096 65536 16777216 > /proc/sys/net/core/wmem_max
-echo 4096 65536 16777216 > /proc/sys/net/ipv4/tcp_rmem
-echo 4096 65536 16777216 > /proc/sys/net/ipv4/tcp_wmem
-echo 3 > /proc/sys/net/ipv4/tcp_fastopen
-echo 8 > /proc/sys/net/netfilter/nf_conntrack_log_invalid
 
 EOF
 chmod 755 "$script_start"

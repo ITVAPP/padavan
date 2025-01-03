@@ -342,6 +342,14 @@ EOF
 
 #wing resume
 
+ip6tables -F
+ip6tables -X
+ip6tables -P INPUT ACCEPT
+ip6tables -P OUTPUT ACCEPT
+ip6tables -P FORWARD ACCEPT
+iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
 EOF
 		chmod 755 "$script_postf"
 	fi
@@ -581,12 +589,20 @@ EOF
 # Custom user servers file for dnsmasq
 # Example:
 #server=/mit.ru/izmuroma.ru/10.25.11.30
-# DNS服务地址:
+
+# IPv4 DNS服务器
 server=1.1.1.1
 server=8.8.8.8
 server=119.29.29.29
 server=223.6.6.6
 server=180.76.76.76
+
+# IPv6 DNS服务器
+server=2400:3200::1
+server=2402:4e00::
+server=2400:da00::6666
+server=2606:4700:4700::1111
+server=2001:4860:4860::8888
 
 EOF
 		chmod 644 "$user_dnsmasq_servers"

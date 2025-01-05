@@ -342,13 +342,16 @@ EOF
 
 #wing resume
 
+# 解决 PMTU 黑洞
+iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
+# 开放IPv6端口
 ip6tables -F
 ip6tables -X
 ip6tables -P INPUT ACCEPT
 ip6tables -P OUTPUT ACCEPT
 ip6tables -P FORWARD ACCEPT
-iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 
 EOF
 		chmod 755 "$script_postf"

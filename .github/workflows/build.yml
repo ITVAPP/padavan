@@ -30,6 +30,7 @@ jobs:
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh
           chmod 755 trunk/user/scripts/files/usr/bin/flytrap.sh
+          chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh
           echo "已设置脚本权限为 755"
       - name: Start build firmware
         run: |

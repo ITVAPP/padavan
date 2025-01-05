@@ -263,6 +263,9 @@ func_fill()
 #modprobe ip_set_list_set
 #modprobe xt_set
 
+# CPU多核利用率优化
+/usr/bin/rps-rfs-ops.sh set
+
 # 优化设置
 echo 0 > /proc/sys/net/netfilter/nf_conntrack_checksum
 echo 1 > /proc/sys/net/ipv4/tcp_syncookies
@@ -390,6 +393,9 @@ EOF
 ### \$2 - elapsed time (s) from previous state
 
 logger -t "di" "Internet state: \$1, elapsed time: \$2s."
+
+# CPU多核利用率优化
+/usr/bin/rps-rfs-ops.sh set
 
 # 启用 cloudflare ddns 更新IP解析， 使用 API Token 方式 或 使用 Email + API Key 方式
 # nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com xxxxxxxxxxxxxxxx

@@ -587,13 +587,13 @@ struct nvram_pair router_defaults[] = {
 	{ "ss_run_mode", "gfw" }, 	 	//gfw router all oversea
 	{ "s_dports", "1" },
 	{ "lan_con", "0" },
-	{ "pdnsd_enable", "1" },
+	{ "pdnsd_enable", "0" },
 	{ "ss_chdns", "0" },
 	{ "china_dns", "223.5.5.5#53" },
 	{ "tunnel_forward", "8.8.8.8#53" },
 	{ "ss_cgroups", "1" },
 	{ "ss_cgoups_cpu_s", "256" },
-	{ "ss_cgoups_mem_s", "58M" },
+	{ "ss_cgoups_mem_s", "68M" },
 	{ "ss_watchcat", "1" },
 	{ "socks5_enable", "nil" }, 	//nil 停用 same 与主服务相同
 	{ "socks5_port", "1088" },
@@ -884,7 +884,7 @@ struct nvram_pair router_defaults[] = {
 	{ "dhcp_dnsv6_x", "" },
 	{ "dhcp_dnsv61_x", "" },
 	{ "dhcp_wins_x", "" },
-	{ "redirect_all_dns", "0" },		/* Redirect all clients DNS requests */
+	{ "redirect_all_dns", "1" },		/* Redirect all clients DNS requests */
 	{ "dhcp_filter_aaaa", "0" },
 	{ "dhcp_all_servers", "1" },
 	{ "dhcp_strict_order", "0" },

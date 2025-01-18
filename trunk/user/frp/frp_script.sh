@@ -6,7 +6,7 @@ mkdir -p /tmp/frp
 #请自行修改 token 用于对客户端连接进行身份验证
 # IP查询： http://119.29.29.29/d?dn=github.com
 
-cat > "/tmp/frp/myfrpc.ini" <<-\EOF
+cat > "/tmp/frp/frpc.toml" <<-\EOF
 # ==========客户端配置：==========
 [common]
 # IPv6 的文字地址或主机名必须用方括号括起来，例如 "[::1]:80"、"[ipv6-host]:http" 或 "[ipv6-host%zone]:80"
@@ -19,9 +19,6 @@ dial_server_timeout = 10
 
 # 活动网络连接的保活探测间隔。如果为负值，则禁用保活探测
 dial_server_keepalive = 7200
-
-# 日志文件路径，如 ./frpc.log，默认不记录
-log_file = /dev/null
 
 # 日志级别: trace, debug, info, warn, error
 log_level = error
@@ -100,5 +97,5 @@ EOF
 #启动：
 frpc_enable=`nvram get frpc_enable`
 if [ "$frpc_enable" = "1" ] ; then
-    frpc -c /tmp/frp/myfrpc.ini 2>&1 &
+    frpc -c /tmp/frp/frpc.toml 2>&1 &
 fi

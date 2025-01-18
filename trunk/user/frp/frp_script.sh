@@ -9,6 +9,7 @@ mkdir -p /tmp/frp
 cat > "/tmp/frp/frpc.toml" <<-\EOF
 # ==========客户端配置：==========
 [common]
+# 服务端需要 v0.53.0 版本或以上，因为本版本通过 SSH 隧道模式连接
 # IPv6 的文字地址或主机名必须用方括号括起来，例如 "[::1]:80"、"[ipv6-host]:http" 或 "[ipv6-host%zone]:80"
 # 对于单独的 "server_addr" 字段，不需要方括号，如 "server_addr = ::"
 server_addr = 0.0.0.0
@@ -19,11 +20,6 @@ dial_server_timeout = 10
 
 # 活动网络连接的保活探测间隔。如果为负值，则禁用保活探测
 dial_server_keepalive = 7200
-
-# 日志级别: trace, debug, info, warn, error
-log_level = error
-
-log_max_days = 1
 
 # 是否在发送到 frps 的心跳中包含身份验证令牌。默认值为 false
 authenticate_heartbeats = false

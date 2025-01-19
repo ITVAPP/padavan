@@ -27,9 +27,9 @@ jobs:
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
           # 设置编译优化标志
-          echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
-          echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
-          echo "LDFLAGS=-Wl,--gc-sections" >> $GITHUB_ENV
+          echo "CFLAGS=-O3 -ffunction-sections -fdata-sections -flto -fno-common -fno-unwind-tables -Wl,--gc-sections" >> $GITHUB_ENV
+          echo "CXXFLAGS=-O3 -ffunction-sections -fdata-sections -flto -fno-common -fno-unwind-tables -Wl,--gc-sections" >> $GITHUB_ENV
+          echo "LDFLAGS=-Wl,--gc-sections -Wl,--as-needed -flto" >> $GITHUB_ENV
       - name: Set script permissions
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh
@@ -39,19 +39,15 @@ jobs:
       - name: Start build firmware
         run: |
           make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} STRIP=1
-      - name: Compress firmware
-        run: |
-          cd trunk/images
-          xz -9 *.trx
       - uses: actions/upload-artifact@main
         with:
           name: ${{ matrix.target }}-${{ matrix.toolchain }}
-          path: trunk/images/*.trx.xz
+          path: trunk/images/*.trx
       - uses: ncipollo/release-action@main
         with:
           commit: ${{ github.sha }}
           tag: ${{ env.Compilation_time }}
-          artifacts: trunk/images/*.trx.xz
+          artifacts: trunk/images/*.trx
           allowUpdates: true
           omitBodyDuringUpdate: true
       - uses: Mattraks/delete-workflow-runs@main

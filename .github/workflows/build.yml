@@ -26,10 +26,6 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
-          # 设置编译优化标志
-          echo "CFLAGS=-O3 -ffunction-sections -fdata-sections -flto -fno-common -fno-unwind-tables -Wl,--gc-sections" >> $GITHUB_ENV
-          echo "CXXFLAGS=-O3 -ffunction-sections -fdata-sections -flto -fno-common -fno-unwind-tables -Wl,--gc-sections" >> $GITHUB_ENV
-          echo "LDFLAGS=-Wl,--gc-sections -Wl,--as-needed -flto" >> $GITHUB_ENV
       - name: Set script permissions
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh

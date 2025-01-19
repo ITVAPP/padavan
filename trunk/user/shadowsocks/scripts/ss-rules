@@ -8,41 +8,6 @@
 # This is free software, licensed under the GNU General Public License v3.
 # See /LICENSE for more information.
 #
-
-# 预定义常用网段数组以提高性能
-readonly PRIVATE_NETWORKS=(
-    "0.0.0.0/8"
-    "10.0.0.0/8"
-    "100.64.0.0/10"
-    "127.0.0.0/8"
-    "169.254.0.0/16"
-    "172.16.0.0/12"
-    "192.0.0.0/24"
-    "192.0.2.0/24"
-    "192.88.99.0/24"
-    "192.168.0.0/16"
-    "198.18.0.0/15"
-    "198.51.100.0/24"
-    "203.0.113.0/24"
-    "224.0.0.0/4"
-    "240.0.0.0/4"
-    "255.255.255.255"
-)
-
-# 预定义 ipset 名称常量
-readonly IPSET_NAMES=(
-    "ss_spec_lan_ac"
-    "ss_spec_wan_ac"
-    "ssr_gen_router"
-    "china"
-    "fplan"
-    "gmlan"
-    "gfwlist"
-    "oversea"
-    "blacklist"
-    "whitelist"
-)
-
 # Fix rule to not be removed, $TAG has wrongly added underscore(_) at beginning of $TAG
 modprobe xt_TPROXY
 modprobe xt_set
@@ -105,12 +70,16 @@ flush_r() {
 	flush_iptables mangle
 	ip rule del fwmark 0x01/0x01 table 100 2>/dev/null
 	ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null
-	
-	# 使用数组批量删除ipset
-	for set in "${IPSET_NAMES[@]}"; do
-		ipset -X "$set" 2>/dev/null
-	done
-	
+	ipset -X ss_spec_lan_ac 2>/dev/null
+	ipset -X ss_spec_wan_ac 2>/dev/null
+	ipset -X ssr_gen_router 2>/dev/null
+	ipset -X china 2>/dev/null
+	ipset -X fplan 2>/dev/null
+	ipset -X gmlan 2>/dev/null
+	ipset -X gfwlist 2>/dev/null
+	ipset -X oversea 2>/dev/null
+	ipset -X blacklist 2>/dev/null
+	ipset -X whitelist 2>/dev/null
 	[ -n "$FWI" ] && echo '#!/bin/sh' >$FWI
 	return 0
 }
@@ -189,12 +158,14 @@ EOF
 
 fw_rule() {
 	$ipt_n -N SS_SPEC_WAN_FW
-	
-	# 使用数组批量添加私有网段返回规则
-	for net in "${PRIVATE_NETWORKS[@]}"; do
-		$ipt_n -A SS_SPEC_WAN_FW -d "$net" -j RETURN
-	done
-	
+	$ipt_n -A SS_SPEC_WAN_FW -d 0.0.0.0/8 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 10.0.0.0/8 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 127.0.0.0/8 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 169.254.0.0/16 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 172.16.0.0/12 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 192.168.0.0/16 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 224.0.0.0/4 -j RETURN
+	$ipt_n -A SS_SPEC_WAN_FW -d 240.0.0.0/4 -j RETURN
   	echo $LANCON
 	if [ "$LANCON" = "all" ];then
 	ipset -N fplan hash:net 2>/dev/null
@@ -235,17 +206,17 @@ tp_rule() {
 	ip route add local 0.0.0.0/0 dev lo table 100
 
 	$ipt_m -N SS_SPEC_TPROXY
-	
-	# 使用数组批量添加端口返回规则
-	for port in 80 443 53 5353; do
-		$ipt_m -A SS_SPEC_TPROXY -p udp --dport $port -j RETURN
-	done
-	
-	# 使用数组批量添加私有网段返回规则
-	for net in "${PRIVATE_NETWORKS[@]}"; do
-		$ipt_m -A SS_SPEC_TPROXY -p udp -d "$net" -j RETURN
-	done
-	
+	$ipt_m -A SS_SPEC_TPROXY -p udp --dport 80 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp --dport 443 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp --dport 53 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 0.0.0.0/8 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 10.0.0.0/8 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 127.0.0.0/8 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 169.254.0.0/16 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 172.16.0.0/12 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 192.168.0.0/16 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 224.0.0.0/4 -j RETURN
+	$ipt_m -A SS_SPEC_TPROXY -p udp -d 240.0.0.0/4 -j RETURN
 	$ipt_m -A SS_SPEC_TPROXY -p udp -d $SERVER -j RETURN
 	if [ "$TPROXY" -ne 1 ]; then
 	$ipt_n -I SS_SPEC_WAN_AC 1 -d $server -j RETURN
@@ -299,20 +270,48 @@ EOF
 }
 
 gen_iplist() {
-	# 使用预定义的私有网段数组生成IP列表
-	for net in "${PRIVATE_NETWORKS[@]}"; do
-		echo "$net"
-	done
-	get_wan_ip
-	cat ${IGNORE_LIST:=/dev/null} 2>/dev/null
+	cat <<-EOF
+		0.0.0.0/8
+		10.0.0.0/8
+		100.64.0.0/10
+		127.0.0.0/8
+		169.254.0.0/16
+		172.16.0.0/12
+		192.0.0.0/24
+		192.0.2.0/24
+		192.88.99.0/24
+		192.168.0.0/16
+		198.18.0.0/15
+		198.51.100.0/24
+		203.0.113.0/24
+		224.0.0.0/4
+		240.0.0.0/4
+		255.255.255.255
+		$(get_wan_ip)
+		$(cat ${IGNORE_LIST:=/dev/null} 2>/dev/null)
+EOF
 }
 
 gen_spec_iplist() {
-	# 使用预定义的私有网段数组生成特定IP列表
-	for net in "${PRIVATE_NETWORKS[@]}"; do
-		echo "$net"
-	done
-	get_wan_ip
+	cat <<-EOF
+		0.0.0.0/8
+		10.0.0.0/8
+		100.64.0.0/10
+		127.0.0.0/8
+		169.254.0.0/16
+		172.16.0.0/12
+		192.0.0.0/24
+		192.0.2.0/24
+		192.88.99.0/24
+		192.168.0.0/16
+		198.18.0.0/15
+		198.51.100.0/24
+		203.0.113.0/24
+		224.0.0.0/4
+		240.0.0.0/4
+		255.255.255.255
+		$(get_wan_ip)
+EOF
 }
 
 gen_include() {

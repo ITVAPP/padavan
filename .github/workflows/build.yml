@@ -2,7 +2,7 @@ name: build
 on:
   push:
     branches:
-    - "*"
+    - ""
   workflow_dispatch:
 jobs:
   build:
@@ -34,7 +34,7 @@ jobs:
           echo "已设置脚本权限为 755"
       - name: Start build firmware
         run: |
-          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }}
+          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} EXTRA_CFLAGS="-Os -s -flto" STRIP=1
       - uses: actions/upload-artifact@main
         with:
           name: ${{ matrix.target }}-${{ matrix.toolchain }}

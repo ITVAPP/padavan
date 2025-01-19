@@ -20,17 +20,16 @@ jobs:
         with:
           key: ${{ matrix.target }}-${{ matrix.toolchain }}
       
-      # 设置 Go 环境
-      - uses: actions/setup-go@main
-        with:
-          go-version: '1.23.0'
-          check-latest: true
-          cache: false
+      # 安装必要工具
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev gcc-4.9 g++-4.9
+          export PATH=/path/to/toolchain/bin:$PATH
       
-      # 准备构建环境
+      # 准备环境
       - name: Prepare environment
         run: |
-          sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
       
@@ -42,10 +41,12 @@ jobs:
           chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh
           echo "已设置脚本权限为 755"
       
-      # 开始构建固件
+      # 使用默认配置并编译
       - name: Start build firmware
         run: |
-          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} EXTRA_CFLAGS="-Os -s -flto" STRIP=1
+          cd trunk
+          make defconfig
+          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} EXTRA_CFLAGS="-Os -s" STRIP=1
       
       # 上传生成的固件文件
       - uses: actions/upload-artifact@main

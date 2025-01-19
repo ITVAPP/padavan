@@ -5,7 +5,7 @@ mkdir -p /tmp/frp
 #请自行修改 token 用于对客户端连接进行身份验证
 # IP查询： http://119.29.29.29/d?dn=github.com
 
-cat > "/tmp/frp/frpc.toml" <<-\EOF
+cat > "/tmp/frp/frpc.ini" <<-\EOF
 # ==========客户端配置：==========
 [common]
 # IPv6必须用方括号括起来，例如"[::1]:80"、"[ipv6-host]:http"或"[ipv6-host%zone]:80"
@@ -71,5 +71,5 @@ EOF
 frpc_enable=`nvram get frpc_enable`
 frpc_enable=${frpc_enable:-"0"}
 if [ "$frpc_enable" = "1" ] ; then
-    frpc -c /tmp/frp/frpc.toml 2>&1 &
+    frpc -c /tmp/frp/frpc.ini 2>&1 &
 fi

@@ -64,7 +64,7 @@ frp_close() {
     fi
 }
 
-# 根据命令执行相应的操作
+# 根据命令执行相应操作
 case $1 in
     start)
         frp_start

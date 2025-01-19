@@ -26,6 +26,9 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
+          echo "CFLAGS=-ffunction-sections -fdata-sections -fno-unwind-tables" >> $GITHUB_ENV
+          echo "CXXFLAGS=-ffunction-sections -fdata-sections -fno-unwind-tables" >> $GITHUB_ENV
+          echo "LDFLAGS=-Wl,--gc-sections" >> $GITHUB_ENV
       - name: Set script permissions
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh
@@ -34,7 +37,7 @@ jobs:
           echo "已设置脚本权限为 755"
       - name: Start build firmware
         run: |
-          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} STRIP=1
+          make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }}
       - uses: actions/upload-artifact@main
         with:
           name: ${{ matrix.target }}-${{ matrix.toolchain }}

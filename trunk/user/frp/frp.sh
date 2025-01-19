@@ -19,7 +19,7 @@ check_frp() {
             frp_start
         fi
     else
-        logger -t "frp" "网络检测失败，稍后尝试启动frp"
+        logger -t "frp" "网络检测失败，尝试启动frp"
     fi
 }
 

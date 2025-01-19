@@ -12,33 +12,48 @@ jobs:
         target: [JCG-AC860M]
         toolchain: [mipsel-linux-musl]
     steps:
+      # 检出代码
       - uses: actions/checkout@main
+      
+      # 设置 ccache，提升构建速度
       - uses: hendrikmuhs/ccache-action@main
         with:
           key: ${{ matrix.target }}-${{ matrix.toolchain }}
+      
+      # 设置 Go 环境
       - uses: actions/setup-go@main
         with:
           go-version: '1.23.0'
           check-latest: true
           cache: false
+      
+      # 准备构建环境
       - name: Prepare environment
         run: |
           sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
+      
+      # 设置脚本权限
       - name: Set script permissions
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh
           chmod 755 trunk/user/scripts/files/usr/bin/flytrap.sh
           chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh
           echo "已设置脚本权限为 755"
+      
+      # 开始构建固件
       - name: Start build firmware
         run: |
           make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }} EXTRA_CFLAGS="-Os -s -flto" STRIP=1
+      
+      # 上传生成的固件文件
       - uses: actions/upload-artifact@main
         with:
           name: ${{ matrix.target }}-${{ matrix.toolchain }}
           path: trunk/images/*.trx
+      
+      # 发布固件到 Release
       - uses: ncipollo/release-action@main
         with:
           commit: ${{ github.sha }}
@@ -46,6 +61,8 @@ jobs:
           artifacts: trunk/images/*.trx
           allowUpdates: true
           omitBodyDuringUpdate: true
+      
+      # 自动清理旧的构建运行
       - uses: Mattraks/delete-workflow-runs@main
         with:
           retain_days: 0

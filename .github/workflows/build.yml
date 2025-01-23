@@ -61,22 +61,13 @@ jobs:
           # 使用指定的工具链和目标设备进行固件编译
           make ${{ matrix.target }} TOOLCHAIN=${{ matrix.toolchain }}
 
-      # Step 7: 压缩生成的固件文件系统
-      - name: Optimize and compress filesystem
-        run: |
-          # 使用 squashfs 和 LZMA 压缩固件文件系统
-          mksquashfs trunk/rootfs/ trunk/rootfs_compressed.sqsh -comp lzma -b 256K
-          # 替换原始文件系统为压缩后的版本
-          mv trunk/rootfs_compressed.sqsh trunk/rootfs.sqsh
-          echo "已压缩文件系统以减小固件体积"
-
-      # Step 8: 上传编译生成的固件文件
+      # Step 7: 上传编译生成的固件文件
       - uses: actions/upload-artifact@main
         with:
           name: ${{ matrix.target }}-${{ matrix.toolchain }}  # 设置上传的文件名
           path: trunk/images/*.trx  # 指定上传的固件文件路径
 
-      # Step 9: 创建或更新版本发布
+      # Step 8: 创建或更新版本发布
       - uses: ncipollo/release-action@main
         with:
           commit: ${{ github.sha }}  # 使用当前工作流运行的提交哈希值
@@ -85,7 +76,7 @@ jobs:
           allowUpdates: true  # 允许更新已有标签的发布
           omitBodyDuringUpdate: true  # 更新发布时省略正文内容
 
-      # Step 10: 删除旧的工作流运行记录
+      # Step 9: 删除旧的工作流运行记录
       - uses: Mattraks/delete-workflow-runs@main
         with:
           retain_days: 0  # 删除所有超过 0 天的运行记录

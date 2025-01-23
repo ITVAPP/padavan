@@ -370,7 +370,9 @@ function tabSelect(tabName){
 function switchPage(id){
 	if(id == "tab_bw_24")
 		location.href = "/Main_TrafficMonitor_last24.asp";
-	else if(id == "tab_tr_dy")
+	else if(id == "tab_tr_traffic")
+		location.href = "/Main_traffic.asp";
+	else  if(id == "tab_tr_dy")
 		location.href = "/Main_TrafficMonitor_daily.asp#DY";
 	else if(id == "tab_tr_mo")
 		location.href = "/Main_TrafficMonitor_daily.asp#MO";
@@ -433,6 +435,7 @@ function switchPage(id){
                                     <div style="margin-bottom: 0px; margin: -36px 0px 0px 0px;">
                                         <ul id="tabs" class="nav nav-tabs">
                                             <li class="active"><a href="javascript:void(0)" id="tab_bw_rt"><#menu4_2_1#></a></li>
+                                            <li><a href="javascript:void(0)" id="tab_tr_traffic">设备流量统计</a></li>
                                             <li><a href="javascript:void(0)" id="tab_bw_24"><#menu4_2_2#></a></li>
                                             <li><a href="javascript:void(0)" id="tab_tr_dy"><#menu4_2_3#></a></li>
                                             <li><a href="javascript:void(0)" id="tab_tr_mo"><#menu4_2_4#></a></li>

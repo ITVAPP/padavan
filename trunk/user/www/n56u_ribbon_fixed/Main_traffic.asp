@@ -20,13 +20,13 @@
             fetch('/traffic_stats.json')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('无法加载流量统计文件');
+                        throw new Error('暂无统计数据,如未开启统计，请到 系统管理 - 服务 - 调度任务 (Crontab) 删除 # 号注释');
                     }
                     return response.json();
                 })
                 .then(data => {
                     if (!data || !data.devices || !data.total) {
-                        throw new Error('流量统计数据格式不正确或数据为空');
+                        throw new Error('流量统计数据格式不正确或数据为空，如刚重启设备，需等待五分钟后才有数据');
                     }
 
                     var grid = '<table class="table table-striped">';

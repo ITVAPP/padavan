@@ -7,9 +7,9 @@ ROMFS_DIR = $(ROOTDIR)/romfs
 include $(BOARD_CONFIG)
 
 PROJECT_HOME_URL="https:\/\/github.com\/hanwckf\/padavan-4.4\/"
-PROJECT_HOME_URL_MOD="https:\/\/github.com\/TurBoTse\/padavan\/"
+PROJECT_HOME_URL_MOD="https:\/\/www.aicss.net\/"
 
-LABEL_COPYRIGHT_TEXT="© 2011-`date +'%Y'` Padavan \& N56U Project Community \, Compilation Time: `TZ='Asia/Shanghai' date +'%Y.%m.%d %H:%M:%S'`"
+LABEL_COPYRIGHT_TEXT="© 2011-`date +'%Y'` Padavan Project Community \, Compilation Time: `TZ='Asia/Shanghai' date +'%Y.%m.%d %H:%M:%S'`"
 
 BOARD_PATTERN=s/ZVMODELVZ/$(CONFIG_FIRMWARE_PRODUCT_ID)/g
 COPYR_PATTERN=s/ZVCOPYRVZ/$(LABEL_COPYRIGHT_TEXT)/g

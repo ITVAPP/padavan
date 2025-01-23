@@ -114,6 +114,10 @@ function checkAndAddCronTasks() {
             task: "# 28 5 * * * reboot  # 每天凌晨5点28分重启（默认禁用，去掉 # 可启用）" 
         },
         { 
+            keyword: "reboot", 
+            task: "# */5 * * * * nice -n 18 /usr/bin/traffic.sh  # 每5分钟进行设备流量统计（默认禁用，去掉 # 可启用）" 
+        },
+        { 
             keyword: "flytrap.sh", 
             task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh log_blocked_ips  # 每 30 分钟执行一次检查防火墙规则，并记录被加入黑名单的IP（默认禁用，去掉 # 可启用）" 
         }

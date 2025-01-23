@@ -277,6 +277,8 @@ function redraw_history(){
 function switchPage(id){
 	if(id == "tab_bw_rt")
 		location.href = "/Main_TrafficMonitor_realtime.asp";
+	else if(id == "tab_tr_traffic")
+		location.href = "/Main_traffic.asp";
 	else if(id == "tab_bw_24")
 		location.href = "/Main_TrafficMonitor_last24.asp";
 	else if(id == "tab_tr_dy")

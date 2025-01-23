@@ -2,14 +2,14 @@
 
 # 流量统计脚本
 # 用途：统计局域网设备开机后的总流量
-# JSON位置：/tmp/traffic_stats.json
+# JSON位置：/www/traffic_stats.json
 
 # 定义变量
-JSON_FILE="/tmp/traffic_stats.json"
+JSON_FILE="/www/traffic_stats.json"
 
 # 检查目录
-if [ ! -d "/tmp" ]; then
-   echo "Error: /tmp directory not found"
+if [ ! -d "/www" ]; then
+   echo "Error: /www directory not found"
    exit 1
 fi
 

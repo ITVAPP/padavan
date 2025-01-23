@@ -51,8 +51,9 @@ jobs:
       - name: Set script permissions  # 设置脚本权限的步骤名称
         run: |
           chmod 755 trunk/user/scripts/files/usr/bin/cloudflare_ddns.sh  # 设置 Cloudflare DDNS 脚本权限
-          chmod 755 trunk/user/scripts/files/usr/bin/flytrap.sh  # 设置 Flytrap 脚本权限
-          chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh  # 设置 RPS-RFS 操作脚本权限
+          chmod 755 trunk/user/scripts/files/usr/bin/flytrap.sh  # 设置蜜罐脚本权限
+          chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh  # 设置优化操作脚本权限
+          chmod 755 trunk/user/scripts/files/usr/bin/traffic.sh  # 设置流量脚本操作脚本权限
           echo "已设置脚本权限为 755"  # 输出确认信息
 
       # Step 6: 开始构建固件

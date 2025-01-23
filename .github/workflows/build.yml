@@ -39,14 +39,13 @@ jobs:
           echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
           # 将编译时间保存为环境变量 Compilation_time，格式为 YYYYMMDD
           echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
-          # 优化编译选项以减小固件体积
-          echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer" >> $GITHUB_ENV
-          echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer" >> $GITHUB_ENV
-          echo "LDFLAGS=--gc-sections" >> $GITHUB_ENV
-          # -Os: 优化代码以减小体积
-          # -ffunction-sections 和 -fdata-sections: 生成独立的代码和数据段，便于移除未使用部分
-          # -fomit-frame-pointer: 移除帧指针，进一步减小代码
+          # 优化编译选项以减小固件体积，同时修复 --gc-sections 错误
+          echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -Wl,-e,_start" >> $GITHUB_ENV
+          echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -Wl,-e,_start" >> $GITHUB_ENV
+          echo "LDFLAGS=--gc-sections -e _start" >> $GITHUB_ENV
+          # -e _start: 明确指定链接器入口点为 _start，避免链接器在使用 --gc-sections 时报错
           # --gc-sections: 在链接时移除未使用的代码和数据段
+          # -fomit-frame-pointer: 移除帧指针，进一步减小代码体积
 
       # Step 5: 设置脚本文件的权限
       - name: Set script permissions  # 设置脚本权限的步骤名称

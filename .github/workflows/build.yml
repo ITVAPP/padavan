@@ -3,7 +3,7 @@ name: build
 on:
   push:
     branches:
-    - "*"  # 监听所有分支上的 push 事件
+    - ""  # 监听所有分支上的 push 事件
   workflow_dispatch:  # 支持手动触发工作流
 
 jobs:

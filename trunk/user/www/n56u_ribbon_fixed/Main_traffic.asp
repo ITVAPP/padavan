@@ -26,44 +26,88 @@
        });
        
        function initial(){
-           show_banner(0);
-           show_menu(5, -1, 0);
-           show_footer();
-           loadTrafficStats();
+           try {
+               show_banner(0);
+               show_menu(5, -1, 0);
+               show_footer();
+           } catch(e) {
+               console.error('Layout initialization error:', e);
+           }
+           
+           try {
+               loadTrafficStats();
+           } catch(e) {
+               console.error('Traffic stats loading error:', e);
+           }
        }
        
        function loadTrafficStats() {
            try {
+               // 获取数据，需要处理空值情况
                var trafficData = <% nvram_dump("traffic_stats.json",""); %>;
-               const data = JSON.parse(trafficData);
                
-               if (!data || !data.devices || !data.total) {
-                   throw new Error('流量统计数据格式不正确或数据为空，如刚重启设备，需等待五分钟后才有数据');
+               // 检查 trafficData 是否为空或未定义
+               if (!trafficData) {
+                   throw new Error('未找到流量统计数据文件');
                }
 
+               // 尝试解析 JSON
+               let data = trafficData;
+               if (typeof trafficData === 'string') {
+                   try {
+                       data = JSON.parse(trafficData);
+                   } catch (parseError) {
+                       throw new Error('流量统计数据格式不正确');
+                   }
+               }
+               
+               // 验证数据结构
+               if (!data || !Array.isArray(data.devices) || !data.total || !data.time) {
+                   throw new Error('流量统计数据结构不完整');
+               }
+
+               // 构建表格
                var grid = '<table class="table table-striped">';
                grid += '<tr><th>IP</th><th>MAC</th><th style="text-align:right">上行</th><th style="text-align:right">下行</th></tr>';
 
-               data.devices.forEach(function (device) {
-                   grid += '<tr>';
-                   grid += '<td>' + device.ip + '</td>';
-                   grid += '<td>' + device.mac + '</td>';
-                   grid += '<td style="text-align:right">' + device.up_formatted + '</td>';
-                   grid += '<td style="text-align:right">' + device.down_formatted + '</td>';
-                   grid += '</tr>';
-               });
+               // 设备数据
+               if (data.devices.length === 0) {
+                   grid += '<tr><td colspan="4" style="text-align:center">暂无设备流量数据</td></tr>';
+               } else {
+                   data.devices.forEach(function (device) {
+                       grid += '<tr>';
+                       grid += '<td>' + (device.ip || '-') + '</td>';
+                       grid += '<td>' + (device.mac || '-') + '</td>';
+                       grid += '<td style="text-align:right">' + (device.up_formatted || '0 B') + '</td>';
+                       grid += '<td style="text-align:right">' + (device.down_formatted || '0 B') + '</td>';
+                       grid += '</tr>';
+                   });
+               }
 
+               // 总计行
                grid += '<tr style="font-weight:bold">';
                grid += '<td colspan="2">Total</td>';
-               grid += '<td style="text-align:right">' + data.total.up_formatted + '</td>';
-               grid += '<td style="text-align:right">' + data.total.down_formatted + '</td>';
+               grid += '<td style="text-align:right">' + (data.total.up_formatted || '0 B') + '</td>';
+               grid += '<td style="text-align:right">' + (data.total.down_formatted || '0 B') + '</td>';
                grid += '</tr>';
                grid += '</table>';
 
+               // 更新 DOM
                document.getElementById('traffic-grid').innerHTML = grid;
-               document.getElementById('update_time').innerHTML = '最后更新: ' + data.time;
+               document.getElementById('update_time').innerHTML = '最后更新: ' + (data.time || new Date().toLocaleString());
+
            } catch(error) {
-               document.getElementById('traffic-grid').innerHTML = '<div class="alert alert-danger">加载失败：' + error.message + '</div>';
+               // 错误提示使用更友好的方式显示
+               var errorMessage = '加载失败：' + error.message;
+               if (error.message.includes('未找到')) {
+                   errorMessage += '<br>可能原因：<ul style="margin-top:10px">' +
+                       '<li>设备刚重启，需要等待约5分钟才会开始统计</li>' +
+                       '<li>统计功能可能未正确开启</li>' +
+                       '<li>统计数据文件可能损坏</li></ul>';
+               }
+               
+               document.getElementById('traffic-grid').innerHTML = 
+                   '<div class="alert alert-danger" style="margin:10px">' + errorMessage + '</div>';
                document.getElementById('update_time').innerHTML = '';
            }
        }

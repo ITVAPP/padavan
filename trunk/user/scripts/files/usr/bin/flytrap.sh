@@ -15,7 +15,7 @@ wan_name="ppp0"  # 监控的网络接口名称
 trap_ports="20,21,22,23,3389"  # 需要监控的端口，多个端口用逗号分隔
 trap6="no"  # 是否启用IPv6支持，"yes"启用，"no"禁用
 unlock="16888"  # 黑名单IP的超时时间，0表示永久，单位：秒
-log_file="/var/log/IPblacklist-log.txt"  # 日志文件路径
+log_file="/tmp/IPblacklist-log.txt"  # 日志文件路径
 sh_file="/usr/bin"  # 脚本安装路径
 max_log_size=$((3*1024*1024))  # 最大日志文件大小，默认3MB
 # 白名单的IP地址，可以通过脚本参数动态添加和删除

@@ -299,21 +299,8 @@ echo 4096 65536 16777216 > /proc/sys/net/ipv4/tcp_wmem
 ### drop caches
 sync && echo 3 > /proc/sys/vm/drop_caches
 
-### Roaming assistant for mt76xx WiFi
-#iwpriv ra0 set KickStaRssiLow=-85
-#iwpriv ra0 set AssocReqRssiThres=-80
-#iwpriv rai0 set KickStaRssiLow=-85
-#iwpriv rai0 set AssocReqRssiThres=-80
-
-### Mount SATA disk
-#mdev -s
-
-#wing start trojan://password@host
-#wing start socks5://192.168.1.9:1080
-#ipset add gfwlist 91.108.56.0/22
-#ipset add gfwlist 91.108.4.0/22
-#ipset add gfwlist 109.239.140.0/24
-#ipset add gfwlist 149.154.160.0/20
+### 流量统计脚本，使用本功能还需在 系统管理 - 服务 - 调度任务 (Crontab) 中取消 traffic 前的 # 号注释
+nice -n 18 /usr/bin/traffic.sh
 
 # 蜜罐防火墙规则，将访问 20,21,22,23,3389 端口的人列入黑名单，启用就去掉规则前的 # 号
 # nice -n 18 /usr/bin/flytrap.sh

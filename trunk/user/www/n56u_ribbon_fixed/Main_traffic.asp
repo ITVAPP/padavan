@@ -44,8 +44,11 @@
      function loadTrafficStats() {
          try {
              // 首先获取数据，防止服务器返回空值导致的语法错误
-             let raw = <% nvram_dump("traffic_stats.json","") || "null"; %>
-             if (raw === "null" || raw === null) {
+             let raw = <% 
+                 var stats = nvram_dump("traffic_stats.json","");
+                 print(stats ? stats : "null");
+             %>;
+             if (raw === "null" || raw === null || raw === "") {
                  throw new Error('未找到流量统计数据文件');
              }
              
@@ -59,7 +62,7 @@
                  throw new Error('数据结构不完整');
              }
 
-             var grid = '<table class="table table-striped">';
+             var grid = '<table class="table table-striped" width="96%">';
              grid += '<tr><th width="30%">IP</th><th>MAC</th><th width="16%" style="text-align:right">上行</th><th width="16%" style="text-align:right">下行</th></tr>';
 
              if (data.devices.length === 0) {

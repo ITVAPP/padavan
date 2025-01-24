@@ -101,6 +101,8 @@
                                <div class="round_bottom">
                                    <div class="row-fluid">
                                        <div id="tabMenu" class="submenuBlock"></div>
+                                       <div class="alert alert-info" style="margin: 10px;">屏蔽尝试连接本设备 20,21,22,23,3389 端口的IP<br>
+使用本功能需在 系统管理 - 服务 - 调度任务 (Crontab) 中取消 flytrap 前的 # 号注释</div>
                                        <table width="100%" cellpadding="4" cellspacing="0" class="table">
                                            <tr>
                                                <td style="border-top: 0 none; padding-bottom: 0px;">
@@ -111,7 +113,6 @@
                                            <tr>
                                                <td style="text-align: left; padding-bottom: 0px;">
                                                    <input type="button" onClick="location.href=location.href" value="<#CTL_refresh#>" class="btn btn-primary">
-                                                   <input type="button" onClick="location.href='IPblacklist-log.txt'" value="<#CTL_onlysave#>" class="btn btn-success">
                                                </td>
                                            </tr>
                                        </table>

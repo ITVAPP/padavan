@@ -124,7 +124,8 @@
      }
  </script>
  <style>
-     #tabs {margin-bottom: 0px;}
+    #tabs {margin-bottom: 0px;}
+    .box_head.round_top {margin-bottom: 15px;}
  </style>
 </head>
 

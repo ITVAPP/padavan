@@ -161,7 +161,7 @@ struct nvram_pair router_defaults[] = {
 
 #if BOARD_HAS_5G_RADIO
 	/* 5GHz Wireless parameters */
-	{ "wl_country_code", DEF_WLAN_5G_CC },	/* Country Code (default obtained from driver) */
+	{ "wl_country_code", "AU" },	/* Country Code (default obtained from driver) */
 	{ "wl_ssid", DEF_WLAN_5G_SSID },		/* Service set ID (network name) */
 #if defined(BOARD_HAS_5G_11AX) && BOARD_HAS_5G_11AX
 	{ "wl_gmode", "5" },			/* A/N/AC/AX Mixed */
@@ -280,7 +280,7 @@ struct nvram_pair router_defaults[] = {
 
 #if BOARD_HAS_2G_RADIO
 	/* 2.4GHz Wireless parameters */
-	{ "rt_country_code", DEF_WLAN_2G_CC },
+	{ "rt_country_code", "AU" },
 	{ "rt_ssid", DEF_WLAN_2G_SSID },
 #if defined(BOARD_HAS_2G_11AX) && BOARD_HAS_2G_11AX
 	{ "rt_gmode", "6" },			/* b/g/n/ax mixed */
@@ -490,7 +490,7 @@ struct nvram_pair router_defaults[] = {
 	{ "sshd_wbfp", "2" },
 	{ "misc_lpr_x", "0" },
 	{ "misc_ping_x", "0" },
-	{ "fw_lw_enable_x", "0" },
+	{ "fw_lw_enable_x", "1" },
 	{ "filter_lw_date_x", "1111111" },
 	{ "filter_lw_time_x", "00002359" },
 	{ "filter_lw_default_x", "ACCEPT" },

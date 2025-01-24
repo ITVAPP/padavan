@@ -44,7 +44,7 @@
     function loadTrafficStats() {
         try {
             // 首先获取数据
-            let raw = <% nvram_dump("traffic_stats.json","") || "null" %>;
+            var raw = '<% nvram_dump("traffic_stats.json",""); %>';
             if (raw === null || raw === "null" || raw === "" || raw.length < 10) {
                 document.getElementById('traffic-grid').innerHTML = 
                     '<div class="alert alert-danger" style="margin:10px">未找到有效的流量统计数据<br>' +
@@ -60,22 +60,22 @@
             try {
                 data = typeof raw === 'string' ? JSON.parse(raw) : raw;
             } catch(e) {
-                throw new Error('数据格式不正确');
+                throw new Error('暂无流量统计数据');
             }
             
-            if (!data || Object.keys(data).length === 0) {
-                throw new Error('数据文件为空');
+            if (!data || Object.keys(data).length < 10) {
+                throw new Error('暂无流量统计数据');
             }
             
             // 数据结构验证
             if (!data?.time || !Array.isArray(data?.devices) || !data?.total?.up_formatted || !data?.total?.down_formatted) {
-                throw new Error('数据结构不完整');
+                throw new Error('暂无流量统计数据');
             }
 
             var grid = '<table class="table table-striped" width="96%">';
             grid += '<tr><th width="30%">IP</th><th>MAC</th><th width="16%" style="text-align:right">上行</th><th width="16%" style="text-align:right">下行</th></tr>';
 
-            if (data.devices.length === 0) {
+            if (data.devices.length < 10) {
                 grid += '<tr><td colspan="4" style="text-align:center">暂无设备流量数据</td></tr>';
             } else {
                 data.devices.forEach(function (device) {
@@ -183,7 +183,7 @@
             <div class="row-fluid">
                 <div class="span12">
                     <div class="box well grad_colour_dark_blue">
-                        <h2 class="box_head round_top">Traffic Statistics</h2>
+                        <h2 class="box_head round_top">流量统计数据</h2>
                         <div class="round_bottom">
                             <div class="row-fluid">
                                 <!-- Moved tabMenu to its own line -->

@@ -40,6 +40,20 @@
             return false;
         });
     });
+
+    function switchPage(id) {
+        if (id == "tab_bw_rt")
+            location.href = "/Main_TrafficMonitor.asp";
+        else if (id == "tab_tr_traffic")
+            location.href = "/Main_traffic.asp";
+        else if (id == "tab_bw_24")
+            location.href = "/Main_TrafficMonitor_last24.asp";
+        else if (id == "tab_tr_dy")
+            location.href = "/Main_TrafficMonitor_daily.asp#DY";
+        else if (id == "tab_tr_mo")
+            location.href = "/Main_TrafficMonitor_daily.asp#MO";
+        return false;
+    }
     
     function loadTrafficStats() {
         try {
@@ -112,20 +126,6 @@
                 '<div class="alert alert-danger" style="margin:10px">' + errorMessage + '</div>';
             document.getElementById('update_time').innerHTML = '';
         }
-    }
-
-    function switchPage(id) {
-        if (id == "tab_bw_rt")
-            location.href = "/Main_TrafficMonitor.asp";
-        else if (id == "tab_tr_traffic")
-            location.href = "/Main_traffic.asp";
-        else if (id == "tab_bw_24")
-            location.href = "/Main_TrafficMonitor_last24.asp";
-        else if (id == "tab_tr_dy")
-            location.href = "/Main_TrafficMonitor_daily.asp#DY";
-        else if (id == "tab_tr_mo")
-            location.href = "/Main_TrafficMonitor_daily.asp#MO";
-        return false;
     }
 </script>
 <style>

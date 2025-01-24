@@ -49,8 +49,9 @@
 
        function initial() {
            try {
-               show_banner(2);
-               show_menu(5, 4, 6);
+               show_banner(1);
+               show_menu(5, 5, 5);
+               show_tabMenu();
                show_footer();
                
                var rawContent = E('textarea_raw');

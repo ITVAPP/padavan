@@ -17,7 +17,7 @@
     <script type="text/javascript" src="/popup.js"></script>
     <script>
         function loadTrafficStats() {
-            fetch('/traffic_stats.json')
+            fetch('../tmp/traffic_stats.json')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('暂无统计数据,如未开启统计，请到 系统管理 - 服务 - 调度任务 (Crontab) 删除 # 号注释');

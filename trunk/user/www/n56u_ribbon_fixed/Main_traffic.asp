@@ -58,8 +58,9 @@
     function loadTrafficStats() {
         try {
             // 首先获取数据
-            var raw = '<% nvram_dump("traffic_stats.json",""); %>';
-            if (raw === null || raw === "null" || raw === "" || raw.length < 10) {
+               var trafficData = <% nvram_dump("traffic_stats.json",""); %>;
+               const data = JSON.parse(trafficData);
+            if (data === null || data === "null" || data === "" || data.length < 10) {
                 document.getElementById('traffic-grid').innerHTML = 
                     '<div class="alert alert-danger" style="margin:10px">未找到有效的流量统计数据<br>' +
                     '可能原因：<ul style="margin-top:10px">' +
@@ -70,13 +71,6 @@
                 return;
             }
 
-            let data;
-            try {
-                data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            } catch(e) {
-                throw new Error('暂无流量统计数据');
-            }
-            
             if (!data || Object.keys(data).length < 10) {
                 throw new Error('暂无流量统计数据');
             }

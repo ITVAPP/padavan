@@ -3,7 +3,7 @@ PKG_NAME:=libsodium
 PKG_VERSION:=1.0.20
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://download.libsodium.org/libsodium/releases \
-    https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE \
+    https://github.com/jedisct1/libsodium/releases/download/$(PKG_VERSION)-RELEASE \
     https://github.com/jedisct1/libsodium/releases/download/$(PKG_VERSION)
 PKG_HASH:=skip
 include $(INCLUDE_DIR)/package.mk

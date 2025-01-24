@@ -43,27 +43,26 @@
        
        function loadTrafficStats() {
            try {
-               // 获取数据，需要处理空值情况
+               // 1. 获取数据
                var trafficData = <% nvram_dump("traffic_stats.json",""); %>;
                
-               // 检查 trafficData 是否为空或未定义
-               if (!trafficData) {
+               // 2. 数据有效性检查
+               if (trafficData === undefined || trafficData === null || trafficData === '') {
                    throw new Error('未找到流量统计数据文件');
                }
 
-               // 尝试解析 JSON
-               let data = trafficData;
-               if (typeof trafficData === 'string') {
-                   try {
-                       data = JSON.parse(trafficData);
-                   } catch (parseError) {
-                       throw new Error('流量统计数据格式不正确');
-                   }
+               // 3. JSON 解析
+               let data;
+               try {
+                   data = typeof trafficData === 'string' ? JSON.parse(trafficData) : trafficData;
+               } catch (parseError) {
+                   console.error('JSON parse error:', parseError);
+                   throw new Error('流量统计数据格式不正确');
                }
-               
-               // 验证数据结构
-               if (!data || !Array.isArray(data.devices) || !data.total || !data.time) {
-                   throw new Error('流量统计数据结构不完整');
+
+               // 4. 数据结构验证
+               if (!data?.devices?.length || !data?.total?.up_formatted || !data?.total?.down_formatted || !data?.time) {
+                   throw new Error('数据结构不完整');
                }
 
                // 构建表格

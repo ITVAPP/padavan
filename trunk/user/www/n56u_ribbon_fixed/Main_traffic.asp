@@ -124,6 +124,7 @@
                        <div class="box well grad_colour_dark_blue">
                            <h2 class="box_head round_top">Traffic Statistics</h2>
                            <div class="round_bottom">
+                             <div id="tabMenu" class="submenuBlock"></div>
                                <div style="margin-bottom: 0px; margin: -36px 0px 0px 0px;">
                                    <ul id="tabs" class="nav nav-tabs">
                                        <li><a href="javascript:void(0)" id="tab_bw_rt"><#menu4_2_1#></a></li>

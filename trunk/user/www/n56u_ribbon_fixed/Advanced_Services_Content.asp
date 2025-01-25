@@ -100,45 +100,75 @@ function initial(){
 }
 
 function checkAndAddCronTasks() {
-    // 获取定时任务输入框
-    var cronTextarea = document.form['crontab.login'];
-    if (!cronTextarea) return; // 如果没有找到文本框，退出函数
+  var cronTextarea = document.form['crontab.login'];
+  if (!cronTextarea) return;
 
-    // 获取输入框内容并按行分割
-    var currentTasks = cronTextarea.value.split("\n").map(line => line.trim());
+  var defaultHeader = "# 默认禁用，去掉前面的 # 号可启用以下定时任务:\n\n";
+  var defaultTasks = [
+      {
+          id: "reboot",
+          comment: "# 每天凌晨5点28分重启\n",
+          task: "# 28 5 * * * reboot"
+      },
+      {
+          id: "traffic", 
+          comment: "# 每5分钟进行设备流量统计\n",
+          task: "# */5 * * * * nice -n 18 /usr/bin/traffic.sh"
+      },
+      {
+          id: "flytrap",
+          comment: "# 每30分钟执行一次检查防火墙规则，并记录被加入黑名单的IP\n", 
+          task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh log_blocked_ips"
+      }
+  ];
 
-    // 定义需要检查的任务（默认注释）
-    var requiredTasks = [
-        { 
-            keyword: "reboot", 
-            task: "# 28 5 * * * reboot  # 每天凌晨5点28分重启（默认禁用，去掉 # 可启用）" 
-        },
-        { 
-            keyword: "reboot", 
-            task: "# */5 * * * * nice -n 18 /usr/bin/traffic.sh  # 每5分钟进行设备流量统计（默认禁用，去掉 # 可启用）" 
-        },
-        { 
-            keyword: "flytrap.sh", 
-            task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh log_blocked_ips  # 每 30 分钟执行一次检查防火墙规则，并记录被加入黑名单的IP（默认禁用，去掉 # 可启用）" 
-        }
-    ];
+  // 获取当前内容
+  var currentContent = cronTextarea.value;
 
-    var tasksToAdd = [];
+  // 如果文本框为空，直接添加所有默认任务
+  if (!currentContent.trim()) {
+      cronTextarea.value = defaultHeader + defaultTasks.map(task => 
+          task.comment + task.task).join("\n\n");
+      return;
+  }
 
-    // 检查每个关键词是否存在
-    requiredTasks.forEach(function (requiredTask) {
-        var exists = currentTasks.some(function (line) {
-            return line.includes(requiredTask.keyword); // 判断是否包含关键词
-        });
-        if (!exists) {
-            tasksToAdd.push(requiredTask.task); // 如果缺失，添加到待添加列表
-        }
-    });
+  // 使用简单的正则表达式匹配任务是否存在,无论是否被注释
+  var patterns = {
+      reboot: /28\s+5\s+\*\s+\*\s+\*\s+reboot/m,
+      traffic: /\*\/5\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/traffic\.sh/m,
+      flytrap: /\*\/30\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/flytrap\.sh\s+log_blocked_ips/m
+  };
 
-    // 如果有需要添加的任务，将它们加入到输入框中
-    if (tasksToAdd.length > 0) {
-        cronTextarea.value = cronTextarea.value.trim() + "\n" + tasksToAdd.join("\n");
-    }
+  // 简化判断逻辑,只检查任务是否存在
+  const taskExists = (content, pattern) => pattern.test(content);
+
+  // 检查缺少哪些任务
+  var missingTasks = defaultTasks.filter(task => 
+      !taskExists(currentContent, patterns[task.id]));
+
+  // 如果有缺少的任务，将它们添加到现有内容后面
+  if (missingTasks.length > 0) {
+      // 确保内容以双换行结束
+      if (!currentContent.endsWith('\n\n')) {
+          currentContent += currentContent.endsWith('\n') ? '\n' : '\n\n';
+      }
+      
+      // 如果现有内容中没有默认header，添加它
+      if (!currentContent.includes(defaultHeader.trim())) {
+          currentContent += defaultHeader;
+      }
+
+      // 添加缺少的任务
+      currentContent += missingTasks.map(task => 
+          task.comment + task.task).join("\n\n");
+
+      // 确保文件以换行结束
+      if (!currentContent.endsWith('\n')) {
+          currentContent += '\n';  
+      }
+
+      cronTextarea.value = currentContent;
+  }
 }
 
 function applyRule(){

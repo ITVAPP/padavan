@@ -265,11 +265,6 @@ function loadTrafficStats() {
                                </div>
                                <div id="update_time" style="text-align:right;padding:5px;"></div>
                                <div id="traffic-grid"></div>
-                                    <table class="table">
-                                       <tbody><tr>
-                                           <td style="border: 0 none;"><center><button onclick="window.location.reload()" class="btn btn-primary" style="width: 219px">刷新</button></center></td>
-                                       </tr>
-                                   </tbody></table>
                            </div>
                        </div>
                    </div>

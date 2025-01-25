@@ -106,7 +106,7 @@ function loadTrafficStats() {
         grid += '</table>';
 
         document.getElementById('traffic-grid').innerHTML = grid;
-        document.getElementById('update_time').innerHTML = '<button onclick="loadTrafficStats()" class="btn btn-primary">刷新</button>  最后更新: ' + (data.time || new Date().toLocaleString());
+        document.getElementById('update_time').innerHTML = '最后更新: ' + (data.time || new Date().toLocaleString());
 
     } catch(error) {
         console.error('Traffic stats error:', error);
@@ -189,8 +189,13 @@ function loadTrafficStats() {
                                 <div class="alert alert-info" style="margin: 10px;">
                                     本流量统计非实时统计，每五分钟更新一次<br>使用本功能需在 系统管理 - 服务 - 调度任务 (Crontab) 中取消 traffic 前的 # 号注释
                                 </div>
-                                <div id="traffic-grid"></div>
                                 <div id="update_time" style="text-align:right;padding:5px;"></div>
+                                <div id="traffic-grid"></div>
+                                     <table class="table">
+                                        <tbody><tr>
+                                            <td style="border: 0 none;"><center><button onclick="loadTrafficStats()" class="btn btn-primary" style="width: 219px">刷新</button></center></td>
+                                        </tr>
+                                    </tbody></table>
                             </div>
                         </div>
                     </div>

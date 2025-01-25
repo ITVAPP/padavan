@@ -110,12 +110,13 @@
                                                        readonly="readonly" wrap="off" id="textarea"></textarea>
                                                </td>
                                            </tr>
-                                           <tr>
-                                               <td style="text-align: left; padding-bottom: 0px;">
-                                                   <input type="button" onClick="location.href=location.href" value="<#CTL_refresh#>" class="btn btn-primary">
-                                               </td>
-                                           </tr>
                                        </table>
+                                       <table class="table">
+                                        <tbody><tr>
+                                            <td style="border: 0 none;"><center><input type="button" onClick="location.href=location.href" value="<#CTL_refresh#>" class="btn btn-primary" style="width: 219px"></center></td>
+                                        </tr>
+                                    </tbody></table>
+                                       
                                    </div>
                                </div>
                            </div>

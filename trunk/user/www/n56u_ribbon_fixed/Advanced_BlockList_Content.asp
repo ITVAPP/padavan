@@ -28,19 +28,22 @@
            if (!content || content.trim() === "") return "暂无屏蔽名单数据";
            
            try {
-               var logs = content.split("***************************************");
-               var latestIPv4Block = null;
+               // 找到最后一次出现 IPv4 黑名单的位置
+               const dateIndex = content.lastIndexOf("CST\n");
+               if (dateIndex === -1) return "暂无屏蔽名单数据";
                
-               // 从后向前查找最新的 IPv4 黑名单
-               for (var i = logs.length - 1; i >= 0; i--) {
-                   var block = logs[i].trim();
-                   if (block.includes("IPv4 黑名单：")) {
-                       latestIPv4Block = block;
-                       break;
-                   }
-               }
+               // 获取日期往后的内容
+               const blockStart = content.indexOf("IPv4 黑名单：", dateIndex);
+               if (blockStart === -1) return "暂无屏蔽名单数据";
                
-               return latestIPv4Block || "暂无 IPv4 黑名单数据";
+               // 找到下一个分隔符的位置
+               const blockEnd = content.indexOf("***************************************", blockStart);
+               
+               // 提取日期和黑名单内容
+               const timestamp = content.substring(dateIndex - 20, dateIndex + 3);
+               const blacklist = content.substring(blockStart, blockEnd !== -1 ? blockEnd : undefined);
+               
+               return timestamp + "\n" + blacklist;
            } catch(e) {
                console.error('处理日志错误:', e);
                return "处理日志时发生错误";

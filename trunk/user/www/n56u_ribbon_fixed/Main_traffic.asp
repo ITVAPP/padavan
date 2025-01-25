@@ -19,7 +19,7 @@
    var $j = jQuery.noConflict();
    var sortDirection = {up: false, down: false}; // false 为升序，true 为降序
    var currentPage = 1;
-   var itemsPerPage = 10;
+   var itemsPerPage = 18;
 
    window.initial = function(){
        try {

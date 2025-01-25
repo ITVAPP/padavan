@@ -36,7 +36,7 @@ jobs:
          # 优化编译选项以减小固件体积
          echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
          echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
-         echo "LDFLAGS=-Wl,--gc-sections -Wl,--as-needed" >> $GITHUB_ENV
+         echo "LDFLAGS=" >> $GITHUB_ENV
      # Step 5: 设置脚本文件的权限
      - name: Set script permissions  # 设置脚本权限的步骤名称
        run: |

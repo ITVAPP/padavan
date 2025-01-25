@@ -59,10 +59,10 @@
    }
    
    function renderGrid(data) {
-       var grid = '<table class="table table-striped" width="96%">';
-       grid += '<tr><th width="20%">IP</th><th width="20%">主机名</th><th>MAC</th>' +
-               '<th width="13%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'up\')">上行 ▼</th>' +
-               '<th width="13%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'down\')">下行 ▼</th></tr>';
+       var grid = '<table class="table table-striped">';
+       grid += '<tr><th width="20%">IP</th><th width="25%">主机名</th><th>MAC</th>' +
+               '<th width="15%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'up\')">上行 ▼</th>' +
+               '<th width="15%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'down\')">下行 ▼</th></tr>';
 
        if (data.devices.length === 0) {
            grid += '<tr><td colspan="5" style="text-align:center">暂无设备流量数据</td></tr>';
@@ -157,41 +157,43 @@
        downHeader.innerHTML = '下行 ' + (activeType === 'down' ? (sortDirection.down ? '▼' : '▲') : '▼');
    }
    
-   function loadTrafficStats() {
-       try {
-           var trafficData = <% nvram_dump("traffic_stats.json",""); %>;
-           window.trafficStatsData = typeof trafficData === 'object' ? trafficData : JSON.parse(trafficData);
-           
-           if (window.trafficStatsData === null || window.trafficStatsData === "null" || window.trafficStatsData === "" || Object.keys(window.trafficStatsData).length < 3) {
-               document.getElementById('traffic-grid').innerHTML = 
-                   '<div class="alert alert-danger" style="margin:10px">未找到有效的流量统计数据<br>' +
-                   '可能原因：<ul style="margin-top:10px">' +
-                   '<li>设备刚重启，需要等待约5分钟才会开始统计</li>' +
-                   '<li>统计功能可能未正确开启</li>' +
-                   '<li>统计数据文件可能损坏</li></ul></div>';
-               document.getElementById('update_time').innerHTML = '';
-               return;
-           }
-           
-           if (!window.trafficStatsData?.time || !Array.isArray(window.trafficStatsData?.devices) || !window.trafficStatsData?.total?.up_formatted || !window.trafficStatsData?.total?.down_formatted) {
-               throw new Error('暂无流量统计数据');
-           }
+function loadTrafficStats() {
+    try {
+        var trafficData = "<% nvram_dump("traffic_stats.json",""); %>";
+        // 先用临时变量解析，避免直接赋值给全局变量时的错误
+        const data = typeof trafficData === 'object' ? trafficData : JSON.parse(trafficData);
+        window.trafficStatsData = data;
+        
+        if (window.trafficStatsData === null || window.trafficStatsData === "null" || window.trafficStatsData === "" || Object.keys(window.trafficStatsData).length < 3) {
+            document.getElementById('traffic-grid').innerHTML = 
+                '<div class="alert alert-danger" style="margin:10px">未找到有效的流量统计数据<br>' +
+                '可能原因：<ul style="margin-top:10px">' +
+                '<li>设备刚重启，需要等待约5分钟才会开始统计</li>' +
+                '<li>统计功能可能未正确开启</li>' +
+                '<li>统计数据文件可能损坏</li></ul></div>';
+            document.getElementById('update_time').innerHTML = '';
+            return;
+        }
+        
+        if (!window.trafficStatsData?.time || !Array.isArray(window.trafficStatsData?.devices) || !window.trafficStatsData?.total?.up_formatted || !window.trafficStatsData?.total?.down_formatted) {
+            throw new Error('暂无流量统计数据');
+        }
 
-           renderGrid(window.trafficStatsData);
-           document.getElementById('update_time').innerHTML = '最后更新: ' + (window.trafficStatsData.time || new Date().toLocaleString());
+        renderGrid(window.trafficStatsData);
+        document.getElementById('update_time').innerHTML = '最后更新: ' + (window.trafficStatsData.time || new Date().toLocaleString());
 
-       } catch(error) {
-           console.error('Traffic stats error:', error);
-           var errorMessage = '加载失败：' + error.message;
-           if (error.message.includes('格式不正确') || error.message.includes('数据结构不完整')) {
-               errorMessage += '<br>请检查数据文件格式是否符合要求';
-           }
-           
-           document.getElementById('traffic-grid').innerHTML = 
-               '<div class="alert alert-danger" style="margin:10px">' + errorMessage + '</div>';
-           document.getElementById('update_time').innerHTML = '';
-       }
-   }
+    } catch(error) {
+        console.error('Traffic stats error:', error);
+        var errorMessage = '加载失败：' + error.message;
+        if (error.message.includes('格式不正确') || error.message.includes('数据结构不完整')) {
+            errorMessage += '<br>请检查数据文件格式是否符合要求';
+        }
+        
+        document.getElementById('traffic-grid').innerHTML = 
+            '<div class="alert alert-danger" style="margin:10px">' + errorMessage + '</div>';
+        document.getElementById('update_time').innerHTML = '';
+    }
+}
 </script>
 <style>
    #tabs {

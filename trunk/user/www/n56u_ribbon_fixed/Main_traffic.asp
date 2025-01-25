@@ -159,7 +159,7 @@
    
 function loadTrafficStats() {
     try {
-        var trafficData = "<% nvram_dump("traffic_stats.json",""); %>";
+        var trafficData = '<% nvram_dump("traffic_stats.json",""); %>';
         // 先用临时变量解析，避免直接赋值给全局变量时的错误
         const data = typeof trafficData === 'object' ? trafficData : JSON.parse(trafficData);
         window.trafficStatsData = data;
@@ -183,15 +183,14 @@ function loadTrafficStats() {
         document.getElementById('update_time').innerHTML = '最后更新: ' + (window.trafficStatsData.time || new Date().toLocaleString());
 
     } catch(error) {
-        console.error('Traffic stats error:', error);
-        var errorMessage = '加载失败：' + error.message;
-        if (error.message.includes('格式不正确') || error.message.includes('数据结构不完整')) {
-            errorMessage += '<br>请检查数据文件格式是否符合要求';
-        }
-        
-        document.getElementById('traffic-grid').innerHTML = 
-            '<div class="alert alert-danger" style="margin:10px">' + errorMessage + '</div>';
-        document.getElementById('update_time').innerHTML = '';
+        console.error('加载失败:', error);
+            document.getElementById('traffic-grid').innerHTML = 
+                '<div class="alert alert-danger" style="margin:10px">未找到有效的流量统计数据<br>' +
+                '可能原因：<ul style="margin-top:10px">' +
+                '<li>设备刚重启，需要等待约5分钟才会开始统计</li>' +
+                '<li>统计功能可能未正确开启</li>' +
+                '<li>统计数据文件可能损坏</li></ul></div>';
+            document.getElementById('update_time').innerHTML = '';
     }
 }
 </script>

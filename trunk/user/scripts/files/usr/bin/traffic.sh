@@ -25,7 +25,6 @@ format_bytes() {
       echo "$(($bytes/1024))KB"
   fi
 }
-
 # 获取主机名
 get_hostname() {
    local ip="$1"
@@ -33,18 +32,34 @@ get_hostname() {
    local hostname=$(echo "$line" | awk '{print $4}')
    local mac=$(echo "$line" | awk '{print $2}')
    
+   # 如果主机名为空或 Unknown
+   if [ -z "$hostname" ] || [ "$hostname" = "Unknown" ]; then
+       case "${mac:0:8}" in
+           # Apple 设备
+           "d8:96:95"|"ac:cf:85"|"a8:bb:cf"|"68:d9:3c"|"f4:5c:89"|"88:66:a5") echo "Apple";;
+           # Android 设备
+           "44:d4:e0"|"00:e0:4c"|"40:40:a7"|"40:31:3c"|"54:f2:9f") echo "Android";;
+           # 小米设备
+           "f8:a7:c3"|"28:6c:07"|"7c:49:eb") echo "Xiaomi";;
+           # 华为设备
+           "48:46:c1"|"00:e0:fc"|"68:ab:bc") echo "Huawei";;
+           *) echo "未知设备";;
+       esac
+       return
+   fi
+   
    # 如果是 * 或 wlan0 或者名字包含MAC地址,则使用MAC前缀识别
    if [ "$hostname" = "*" ] || [ "$hostname" = "wlan0" ] || echo "$hostname" | grep -q "[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}" ]; then
        case "${mac:0:8}" in
            # Apple 设备
-           "d8:96:95"|"ac:cf:85"|"a8:bb:cf"|"68:d9:3c") echo "Apple";;
-           # Android/其他手机
-           "44:d4:e0"|"00:e0:4c"|"40:40:a7") echo "Android";;
+           "d8:96:95"|"ac:cf:85"|"a8:bb:cf"|"68:d9:3c"|"f4:5c:89"|"88:66:a5") echo "Apple";;
+           # Android 设备
+           "44:d4:e0"|"00:e0:4c"|"40:40:a7"|"40:31:3c"|"54:f2:9f") echo "Android";;
            # 小米设备
-           "f8:a7:c3"|"28:6c:07") echo "Xiaomi";;
+           "f8:a7:c3"|"28:6c:07"|"7c:49:eb") echo "Xiaomi";;
            # 华为设备
-           "48:46:c1"|"00:e0:fc") echo "Huawei";;
-           *) echo "Unknown";;
+           "48:46:c1"|"00:e0:fc"|"68:ab:bc") echo "Huawei";;
+           *) echo "未知设备";;
        esac
    else
        # 取第一个空格前的内容作为主机名
@@ -52,7 +67,6 @@ get_hostname() {
        echo "$hostname"
    fi
 }
-
 # 创建JSON数组开始
 create_json_start() {
   echo -n "{\"time\":\"$(date '+%Y-%m-%d %H:%M:%S')\",\"devices\":[" > $JSON_FILE

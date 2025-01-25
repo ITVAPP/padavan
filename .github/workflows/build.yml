@@ -28,15 +28,19 @@ jobs:
      - name: Prepare environment  # 设置构建环境的名称
        run: |
          # 更新软件包管理器并安装所需的工具和库
-         sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev upx-ucl
+         sudo apt-get update && sudo apt-get install -y libtool-bin gperf python3-docutils autopoint gettext ccache liblzma-dev libltdl-dev
          # 将根目录路径保存到环境变量 ROOTDIR
          echo "ROOTDIR=${{ github.workspace }}/trunk" >> $GITHUB_ENV
          # 将编译时间保存为环境变量 Compilation_time，格式为 YYYYMMDD
          echo "Compilation_time=$(TZ='Asia/Shanghai' date +%Y%m%d)" >> $GITHUB_ENV
          # 优化编译选项以减小固件体积
-         echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
-         echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer -fno-asynchronous-unwind-tables" >> $GITHUB_ENV
+         echo "CFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer" >> $GITHUB_ENV
+         echo "CXXFLAGS=-Os -ffunction-sections -fdata-sections -fno-unwind-tables -fomit-frame-pointer" >> $GITHUB_ENV
          echo "LDFLAGS=" >> $GITHUB_ENV
+         # -Os: 优化代码以减小体积
+         # -ffunction-sections 和 -fdata-sections: 生成独立的代码和数据段
+         # -fomit-frame-pointer: 移除帧指针，进一步减小代码体积
+
      # Step 5: 设置脚本文件的权限
      - name: Set script permissions  # 设置脚本权限的步骤名称
        run: |
@@ -45,44 +49,28 @@ jobs:
          chmod 755 trunk/user/scripts/files/usr/bin/rps-rfs-ops.sh  # 设置优化操作脚本权限
          chmod 755 trunk/user/scripts/files/usr/bin/traffic.sh  # 设置流量脚本操作脚本权限
          echo "已设置脚本权限为 755"  # 输出确认信息
+
      # Step 5.5: 压缩web文件
-     - name: Minify web files  # 压缩web文件的步骤名称
+     - name: Optimize web files
        run: |
          # 安装必要的压缩工具
-         sudo npm install -g uglify-js clean-css-cli html-minifier
-         
-         # 压缩 JavaScript 文件
-         find trunk/user/www -name "*.js" -exec sh -c '
-           uglifyjs "$1" -o "${1%.js}.min.js" &&
-           mv "${1%.js}.min.js" "$1"
-         ' _ {} \;
-         
-         # 压缩 CSS 文件
-         find trunk/user/www -name "*.css" -exec sh -c '
-           cleancss -o "${1%.css}.min.css" "$1" &&
-           mv "${1%.css}.min.css" "$1"
-         ' _ {} \;
+         sudo npm install -g html-minifier
          
          # 压缩 ASP 文件(保留服务器代码)
-         find trunk/user/www -name "*.asp" -exec sh -c '
-           html-minifier --collapse-whitespace --remove-comments \
-           --minify-js true --minify-css true \
+         find trunk/user/www -name "*.asp" -exec html-minifier \
+           --collapse-whitespace \
+           --remove-comments \
            --preserve-line-breaks \
            --ignore-custom-fragments "<%.*?%>" \
-           "$1" -o "${1%.asp}.min.asp" &&
-           mv "${1%.asp}.min.asp" "$1"
-         ' _ {} \;
+           {} -o {}.min \; -exec mv {}.min {} \;
          
          echo "已完成web文件压缩"  # 输出确认信息
 
      # Step 5.6: 二进制优化
-     - name: Binary optimization
+     - name: Strip binaries
        run: |
          # 移除调试信息
          find trunk -type f -executable -exec strip --strip-all {} \; 2>/dev/null || true
-         
-         # UPX压缩可执行文件
-         find trunk -type f -executable -exec upx --best --lzma {} \; 2>/dev/null || true
          
          echo "已完成二进制优化"
 

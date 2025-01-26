@@ -15,7 +15,6 @@ redir_udp=0
 tunnel_enable=0
 local_enable=0
 pdnsd_enable_flag=0
-chinadnsng_enable_flag=0
 wan_bp_ips="/tmp/whiteip.txt"
 wan_fw_ips="/tmp/blackip.txt"
 lan_fp_ips="/tmp/lan_ip.txt"
@@ -340,55 +339,22 @@ start_dns() {
 	ipset -! flush china
 	ipset -! restore </tmp/china.ipset 2>/dev/null
 	rm -f /tmp/china.ipset
-	start_chinadns() {
-		ss_chdns=$(nvram get ss_chdns)
-		if [ $ss_chdns = 1 ]; then
-			chinadnsng_enable_flag=1
-			local_chnlist_file='/etc/storage/chinadns/chnlist_mini.txt'
-			if [ -f "$local_chnlist_file" ]; then
-			  log "启动chinadns分流，仅国外域名走DNS代理..."
-			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china -M -m $local_chnlist_file >/dev/null 2>&1 &
-			else
-			  log "启动chinadns分流，全部域名走DNS代理...本次不使用本地cdn域名文件$local_chnlist_file, 下次你自已可以创建它，文件中每行表示一个域名（不用要子域名）"
-			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china >/dev/null 2>&1 &
-			fi
-			# adding upstream chinadns-ng 
-			sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-			sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
-			cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-no-resolv
-server=127.0.0.1#65353
-EOF
-		fi
-		# dnsmasq optimization
-		sed -i '/min-cache-ttl/d' /etc/storage/dnsmasq/dnsmasq.conf
-		sed -i '/dns-forward-max/d' /etc/storage/dnsmasq/dnsmasq.conf
-		cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-min-cache-ttl=1800
-dns-forward-max=1000
-EOF
-		# restart dnsmasq
-		killall dnsmasq
-		/user/sbin/dnsmasq >/dev/null 2>&1 &
-	}
+	
 	case "$run_mode" in
 	router)
 		ipset add gfwlist $dnsserver 2>/dev/null
-		# 不论chinadns-ng打开与否，都重启dns_proxy 
-		# 原因是针对gfwlist ipset有一个专有的dnsmasq配置表（由ss-rule创建放在/tmp/dnsmasq.dom/gfwlist_list.conf)
-		# 需要查询上游dns_proxy在本地5353端口
 		stop_dns_proxy
 		start_dns_proxy
-		start_chinadns
+		# restart dnsmasq
+		killall dnsmasq
+		/user/sbin/dnsmasq >/dev/null 2>&1 &
 	;;
 	gfw)
 		dnsstr="$(nvram get tunnel_forward)"
 		dnsserver=$(echo "$dnsstr" | awk -F '#' '{print $1}')
-		#dnsport=$(echo "$dnsstr" | awk -F '#' '{print $2}')
 		ipset add gfwlist $dnsserver 2>/dev/null
 		stop_dns_proxy
 		start_dns_proxy
-		start_chinadns
 		log "开始处理 GFWList..."
 		;;
 	oversea)
@@ -399,7 +365,7 @@ EOF
 		cat >>/etc/storage/dnsmasq/dnsmasq.conf <<EOF
 conf-dir=/etc/storage/dnsmasq.oversea
 EOF
-;;
+    ;;
 	*)
 		ipset -N ss_spec_wan_ac hash:net 2>/dev/null
 		ipset add ss_spec_wan_ac $dnsserver 2>/dev/null
@@ -427,7 +393,6 @@ start_AD() {
 	rm -f /tmp/adnew.conf
 }
 
-# ========== 启动 Socks5 代理 ==========
 start_local() {
 	local s5_port=$(nvram get socks5_port)
 	local local_server=$(nvram get socks5_enable)
@@ -489,10 +454,9 @@ rules() {
 
 start_watchcat() {
 	if [ $(nvram get ss_watchcat) = 1 ]; then
-		let total_count=server_count+redir_tcp+redir_udp+tunnel_enable+v2ray_enable+local_enable+pdnsd_enable_flag+chinadnsng_enable_flag
+		let total_count=server_count+redir_tcp+redir_udp+tunnel_enable+v2ray_enable+local_enable+pdnsd_enable_flag
 		if [ $total_count -gt 0 ]; then
-			#param:server(count) redir_tcp(0:no,1:yes)  redir_udp tunnel kcp local gfw
-			/usr/bin/ss-monitor $server_count $redir_tcp $redir_udp $tunnel_enable $v2ray_enable $local_enable $pdnsd_enable_flag $chinadnsng_enable_flag >/dev/null 2>&1 &
+			/usr/bin/ss-monitor $server_count $redir_tcp $redir_udp $tunnel_enable $v2ray_enable $local_enable $pdnsd_enable_flag 0 >/dev/null 2>&1 &
 		fi
 	fi
 }
@@ -513,7 +477,6 @@ EOF
 	fi
 }
 
-# ========== 启动 SS ==========
 ssp_start() { 
 	ss_enable=`nvram get ss_enable`
 	if rules; then
@@ -537,7 +500,6 @@ ssp_start() {
 	fi
 }
 
-# ========== 关闭 SS ==========
 ssp_close() {
 	rm -rf /tmp/cdn
 	$SS_RULES -f
@@ -559,7 +521,6 @@ ssp_close() {
 	fi
 }
 
-
 clear_iptable() {
 	s5_port=$(nvram get socks5_port)
 	iptables -t filter -D INPUT -p tcp --dport $s5_port -j ACCEPT 2>/dev/null
@@ -569,92 +530,84 @@ clear_iptable() {
 }
 
 kill_process() {
-	v2ray_process=$(pidof v2ray || pidof xray)
-	if [ -n "$v2ray_process" ]; then
-		log "关闭 V2Ray 进程..."
-		killall v2ray xray >/dev/null 2>&1
-		kill -9 "$v2ray_process" >/dev/null 2>&1
-	fi
+    v2ray_process=$(pidof v2ray || pidof xray)
+    if [ -n "$v2ray_process" ]; then
+        log "关闭 V2Ray 进程..."
+        killall v2ray xray >/dev/null 2>&1
+        kill -9 "$v2ray_process" >/dev/null 2>&1
+    fi
 
-	ssredir=$(pidof ss-redir)
-	if [ -n "$ssredir" ]; then
-		log "关闭 ss-redir 进程..."
-		killall ss-redir >/dev/null 2>&1
-		kill -9 "$ssredir" >/dev/null 2>&1
-	fi
+    ssredir=$(pidof ss-redir)
+    if [ -n "$ssredir" ]; then
+        log "关闭 ss-redir 进程..."
+        killall ss-redir >/dev/null 2>&1
+        kill -9 "$ssredir" >/dev/null 2>&1
+    fi
 
-	rssredir=$(pidof ssr-redir)
-	if [ -n "$rssredir" ]; then
-		log "关闭 ssr-redir 进程..."
-		killall ssr-redir >/dev/null 2>&1
-		kill -9 "$rssredir" >/dev/null 2>&1
-	fi
+    rssredir=$(pidof ssr-redir)
+    if [ -n "$rssredir" ]; then
+        log "关闭 ssr-redir 进程..."
+        killall ssr-redir >/dev/null 2>&1
+        kill -9 "$rssredir" >/dev/null 2>&1
+    fi
 
-	sslocal_process=$(pidof ss-local)
-	if [ -n "$sslocal_process" ]; then
-		log "关闭 ss-local 进程..."
-		killall ss-local >/dev/null 2>&1
-		kill -9 "$sslocal_process" >/dev/null 2>&1
-	fi
+    sslocal_process=$(pidof ss-local)
+    if [ -n "$sslocal_process" ]; then
+        log "关闭 ss-local 进程..."
+        killall ss-local >/dev/null 2>&1
+        kill -9 "$sslocal_process" >/dev/null 2>&1
+    fi
 
-	trojandir=$(pidof trojan)
-	if [ -n "$trojandir" ]; then
-		log "关闭 trojan 进程..."
-		killall trojan >/dev/null 2>&1
-		kill -9 "$trojandir" >/dev/null 2>&1
-	fi
-	
-	ipt2socks_process=$(pidof ipt2socks)
-	if [ -n "$ipt2socks_process" ]; then
-		log "关闭 ipt2socks 进程..."
-		killall ipt2socks >/dev/null 2>&1
-		kill -9 "$ipt2socks_process" >/dev/null 2>&1
-	fi
+    trojandir=$(pidof trojan)
+    if [ -n "$trojandir" ]; then
+        log "关闭 trojan 进程..."
+        killall trojan >/dev/null 2>&1
+        kill -9 "$trojandir" >/dev/null 2>&1
+    fi
+    
+    ipt2socks_process=$(pidof ipt2socks)
+    if [ -n "$ipt2socks_process" ]; then
+        log "关闭 ipt2socks 进程..."
+        killall ipt2socks >/dev/null 2>&1
+        kill -9 "$ipt2socks_process" >/dev/null 2>&1
+    fi
 
-	socks5_process=$(pidof srelay)
-	if [ -n "$socks5_process" ]; then
-		log "关闭 socks5 进程..."
-		killall srelay >/dev/null 2>&1
-		kill -9 "$socks5_process" >/dev/null 2>&1
-	fi
+    socks5_process=$(pidof srelay)
+    if [ -n "$socks5_process" ]; then
+        log "关闭 socks5 进程..."
+        killall srelay >/dev/null 2>&1
+        kill -9 "$socks5_process" >/dev/null 2>&1
+    fi
 
-	ssrs_process=$(pidof ssr-server)
-	if [ -n "$ssrs_process" ]; then
-		log "关闭 ssr-server 进程..."
-		killall ssr-server >/dev/null 2>&1
-		kill -9 "$ssrs_process" >/dev/null 2>&1
-	fi
+    ssrs_process=$(pidof ssr-server)
+    if [ -n "$ssrs_process" ]; then
+        log "关闭 ssr-server 进程..."
+        killall ssr-server >/dev/null 2>&1
+        kill -9 "$ssrs_process" >/dev/null 2>&1
+    fi
 
-	cnd_process=$(pidof chinadns-ng)
-	if [ -n "$cnd_process" ]; then
-		log "关闭 chinadns-ng 进程..."
-		killall chinadns-ng >/dev/null 2>&1
-		kill -9 "$cnd_process" >/dev/null 2>&1
-	fi
+    dns2tcp_process=$(pidof dns2tcp)
+    if [ -n "$dns2tcp_process" ]; then
+        log "关闭 dns2tcp 进程..."
+        killall dns2tcp >/dev/null 2>&1
+        kill -9 "$dns2tcp_process" >/dev/null 2>&1
+    fi
 
-	dns2tcp_process=$(pidof dns2tcp)
-	if [ -n "$dns2tcp_process" ]; then
-		log "关闭 dns2tcp 进程..."
-		killall dns2tcp >/dev/null 2>&1
-		kill -9 "$dns2tcp_process" >/dev/null 2>&1
-	fi
-
-	dnsproxy_process=$(pidof dnsproxy)
-	if [ -n "$dnsproxy_process" ]; then
-		log "关闭 dnsproxy 进程..."
-		killall dnsproxy >/dev/null 2>&1
-		kill -9 "$dnsproxy_process" >/dev/null 2>&1
-	fi
-	
-	microsocks_process=$(pidof microsocks)
-	if [ -n "$microsocks_process" ]; then
-		log "关闭 socks5 服务端进程..."
-		killall microsocks >/dev/null 2>&1
-		kill -9 "$microsocks_process" >/dev/null 2>&1
-	fi
+    dnsproxy_process=$(pidof dnsproxy)
+    if [ -n "$dnsproxy_process" ]; then
+        log "关闭 dnsproxy 进程..."
+        killall dnsproxy >/dev/null 2>&1
+        kill -9 "$dnsproxy_process" >/dev/null 2>&1
+    fi
+    
+    microsocks_process=$(pidof microsocks)
+    if [ -n "$microsocks_process" ]; then
+        log "关闭 socks5 服务端进程..."
+        killall microsocks >/dev/null 2>&1
+        kill -9 "$microsocks_process" >/dev/null 2>&1
+    fi
 }
 
-# ========== 启用备用服务器 ==========
 ressp() {
 	BACKUP_SERVER=$(nvram get backup_server)
 	start_redir $BACKUP_SERVER
@@ -695,4 +648,3 @@ reserver)
 	#exit 0
 	;;
 esac
-

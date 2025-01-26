@@ -1,15 +1,4 @@
 #!/bin/sh
-#
-# Copyright (C) 2017 openwrt-ssr
-# Copyright (C) 2017 yushi studio <ywb94@qq.com>
-# Copyright (C) 2018 lean <coolsnowwolf@gmail.com>
-# Copyright (C) 2019 chongshengB <bkye@vip.qq.com>
-# Copyright (C) 2022 TurBoTse <860018505@qq.com>
-# Copyright (C) 2023 simonchen
-#
-# This is free software, licensed under the GNU General Public License v3.
-# See /LICENSE for more information.
-#
 
 NAME=shadowsocksr
 pppoemwan=`nvram get pppoemwan_enable`

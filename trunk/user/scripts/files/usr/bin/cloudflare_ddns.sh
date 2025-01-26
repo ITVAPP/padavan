@@ -16,7 +16,7 @@ SED=$(which sed 2>/dev/null)
 DATE=$(which date 2>/dev/null)
 PS=$(which ps 2>/dev/null)
 
-# 通用错误处理函数（不变）
+# 通用错误处理函数
 handle_error() {
     error_code=$1
     error_message=$2
@@ -58,7 +58,7 @@ handle_error() {
     return 1
 }
 
-# 健康检查函数（修改）
+# 健康检查函数
 check_system_environment() {
     has_error=0
     
@@ -91,7 +91,7 @@ check_system_environment() {
     return 0
 }
 
-# 网络连接检查函数（不变）
+# 网络连接检查函数
 check_network_connectivity() {
     has_error=0
     
@@ -109,7 +109,7 @@ check_network_connectivity() {
     return 0
 }
 
-# 主健康检查函数（不变）
+# 主健康检查函数
 health_check() {
     log_message "信息" "开始健康检查..."
     has_error=0
@@ -133,7 +133,7 @@ health_check() {
     fi
 }
 
-# 改进的网络请求函数（修改）
+# 改进的网络请求函数
 curl_with_timeout() {
     url=$1
     shift
@@ -175,41 +175,41 @@ curl_with_timeout() {
     return 1
 }
 
-# 检查并清理已运行的进程（修改）
+# 检查并清理已运行的进程
 check_and_clean_process() {
     local script_name=$(basename "$0")  # 获取当前脚本名称
     local current_pid=$$  # 获取当前脚本的进程ID
 
     # 使用适配 BusyBox 的命令
     local running_pids=""
-    if echo "$PS" | grep -q "^busybox"; then
+    if echo "$PS" | $GREP -q "^busybox"; then
         running_pids=$(busybox ps w | $GREP "$script_name" | $GREP -v grep | $GREP -v "$current_pid" | $AWK '{print $1}')
     else
         running_pids=$($PS w | $GREP "$script_name" | $GREP -v grep | $GREP -v "$current_pid" | $AWK '{print $1}')
     fi
 
     if [ ! -z "$running_pids" ]; then
-        echo "发现正在运行的同脚本实例，正在清理..."
+        log_message "信息" "发现正在运行的同脚本实例，正在清理..."
         for pid in $running_pids; do
-            if kill -0 "$pid" 2>/dev/null; then
-                echo "终止进程: $pid"
-                kill "$pid" 2>/dev/null
-                sleep 1
+            if $KILL -0 "$pid" 2>/dev/null; then
+                log_message "信息" "终止进程: $pid"
+                $KILL "$pid" 2>/dev/null
+                $SLEEP 1
             fi
         done
-        echo "同脚本进程清理完成"
+        log_message "信息" "同脚本进程清理完成"
     else
-        echo "没有发现其他运行的脚本实例。"
+        log_message "信息" "没有发现其他运行的脚本实例。"
     fi
 }
 
-# 配置日志文件路径（不变）
-LOG_FILE="/var/log/cloudflare-ddns.txt"
+# 配置日志文件路径
+LOG_FILE="/tmp/cloudflare-ddns.txt"
 
-# 定义日志文件的最大大小（不变）
+# 定义日志文件的最大大小
 MAX_LOG_SIZE=1048576  # 默认设置为 1MB
 
-# 检查和轮转日志文件（不变）
+# 检查和轮转日志文件
 check_and_rotate_log() {
     if [ -f "$LOG_FILE" ]; then
         # 使用更通用的方式获取文件大小
@@ -222,7 +222,7 @@ check_and_rotate_log() {
     fi
 }
 
-# 日志函数（修改）
+# 日志函数
 log_message() {
     level="$1"
     message="$2"
@@ -274,13 +274,13 @@ if [ -z "$API_TOKEN" ] && ([ -z "$EMAIL" ] || [ -z "$API_KEY" ]); then
     exit 1
 fi
 
-# 运行健康检查（不变）
+# 运行健康检查
 if ! health_check; then
     log_message "错误" "健康检查失败，退出程序"
     exit 1
 fi
 
-# 设置认证头（修改）
+# 设置认证头
 set_auth_headers() {
     if [ ! -z "$API_TOKEN" ]; then
         # 直接存储认证头值，不包含引号
@@ -299,7 +299,7 @@ set_auth_headers() {
     fi
 }
 
-# 获取当前公网IP（修改）
+# 获取当前公网IP
 get_current_ip() {
     ip=""
     
@@ -346,7 +346,7 @@ get_current_ip() {
     return 1
 }
 
-# 获取Zone ID（修改）
+# 获取Zone ID
 get_zone_id() {
     local retry=1
     while [ $retry -le 2 ]; do
@@ -386,7 +386,7 @@ get_zone_id() {
     return 1
 }
 
-# 处理重复DNS记录（修改）
+# 处理重复DNS记录
 handle_duplicate_records() {
     local response=""
     if [ ! -z "$API_TOKEN" ]; then
@@ -429,7 +429,7 @@ handle_duplicate_records() {
     fi
 }
 
-# 获取当前DNS记录（修改）
+# 获取当前DNS记录
 get_dns_record() {
     local response=""
     if [ ! -z "$API_TOKEN" ]; then
@@ -467,7 +467,7 @@ get_dns_record() {
     fi
 }
 
-# 更新DNS记录（修改）
+# 更新DNS记录
 update_dns_record() {
     local retry=1
     while [ $retry -le 2 ]; do
@@ -520,7 +520,7 @@ update_dns_record() {
     return 1
 }
 
-# 主程序执行流程（不变）
+# 主程序执行流程
 log_message "信息" "开始为 $FULL_DOMAIN 更新Cloudflare DDNS"
 log_message "信息" "域名解析 - 主机记录: $HOST"
 log_message "信息" "域名解析 - 主域名: $DOMAIN"

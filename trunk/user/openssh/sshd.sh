@@ -4,12 +4,12 @@ dir_storage="/etc/storage/openssh"
 sshd_config="$dir_storage/sshd_config"
 
 rsa_key="$dir_storage/ssh_host_rsa_key"
-dsa_key="$dir_storage/ssh_host_dsa_key"
+#dsa_key="$dir_storage/ssh_host_dsa_key"  # 删除 DSA 密钥的定义
 ed25519_key="$dir_storage/ssh_host_ed25519_key"
 
 func_create_config()
 {
-	cat > "$sshd_config" <<EOF
+    cat > "$sshd_config" <<EOF
 # The strategy used for options in this file is to specify options with
 # their default value where possible, but leave them commented.
 # Uncommented options override the default value.
@@ -27,8 +27,7 @@ Protocol 2
 
 # HostKeys for protocol version 2
 HostKey ${rsa_key}
-HostKey ${dsa_key}
-#HostKey ${dir_storage}/ssh_host_ecdsa_key
+#HostKey ${dsa_key}  # 注释掉 DSA 密钥
 HostKey ${ed25519_key}
 
 # Lifetime and size of ephemeral version 1 server key
@@ -109,61 +108,61 @@ PidFile /var/run/sshd.pid
 Subsystem	sftp	/usr/libexec/sftp-server
 
 EOF
-	chmod 644 "$sshd_config"
+    chmod 644 "$sshd_config"
 }
 
 func_start()
 {
-	[ ! -d "$dir_storage" ] && mkdir -p -m 755 $dir_storage
+    [ ! -d "$dir_storage" ] && mkdir -p -m 755 $dir_storage
 
-	old_path="/etc/storage"
-	rm -f "${old_path}/sshd_config"
-	for i in ssh_host_rsa_key ssh_host_dsa_key ; do
-		[ -f "${old_path}/${i}" ] && mv -n "${old_path}/${i}" "$dir_storage"
-		[ -f "${old_path}/${i}.pub" ] && mv -n "${old_path}/${i}.pub" "$dir_storage"
-	done
+    old_path="/etc/storage"
+    rm -f "${old_path}/sshd_config"
+    for i in ssh_host_rsa_key ssh_host_ed25519_key ; do  # 删除 dsa_key
+        [ -f "${old_path}/${i}" ] && mv -n "${old_path}/${i}" "$dir_storage"
+        [ -f "${old_path}/${i}.pub" ] && mv -n "${old_path}/${i}.pub" "$dir_storage"
+    done
 
-	if [ ! -f "$rsa_key" ] || [ ! -f "$dsa_key" ] || [ ! -f "$ed25519_key" ] ; then
-		/usr/bin/ssh-keygen -A
-	fi
+    if [ ! -f "$rsa_key" ] || [ ! -f "$ed25519_key" ] ; then  # 删除 dsa_key 的检查
+        /usr/bin/ssh-keygen -A  # 只生成 RSA 和 Ed25519 密钥
+    fi
 
-	if [ ! -f "$sshd_config" ] ; then
-		func_create_config
-	fi
+    if [ ! -f "$sshd_config" ] ; then
+        func_create_config
+    fi
 
-	touch /var/run/utmp
+    touch /var/run/utmp
 
-	if [ -n "$1" ] ; then
-		/usr/sbin/sshd -o PasswordAuthentication=no
-	else
-		/usr/sbin/sshd
-	fi
+    if [ -n "$1" ] ; then
+        /usr/sbin/sshd -o PasswordAuthentication=no
+    else
+        /usr/sbin/sshd
+    fi
 }
 
 func_stop()
 {
-	killall -q sshd
+    killall -q sshd
 }
 
 func_reload()
 {
-	kill -SIGHUP `cat /var/run/sshd.pid`
+    kill -SIGHUP `cat /var/run/sshd.pid`
 }
 
 case "$1" in
 start)
-	func_start $2
-	;;
+    func_start $2
+    ;;
 stop)
-	func_stop
-	;;
+    func_stop
+    ;;
 reload)
-	func_reload
-	;;
+    func_reload
+    ;;
 *)
-	echo "Usage: $0 {start|stop|reload}"
-	exit 1
-	;;
+    echo "Usage: $0 {start|stop|reload}"
+    exit 1
+    ;;
 esac
 
 exit 0

@@ -42,8 +42,13 @@ local function base64Decode(text)
 end
 
 local log = function(...)
-	print(os.date("%Y-%m-%d %H:%M:%S ") .. table.concat({ ... }, " "))
-	os.execute("logger -t 'SS' '" .. table.concat({ ... }, " ") .. "'")
+    local message = table.concat({ ... }, " ")
+    -- 过滤掉 "server recv: Connection reset by peer" 日志
+    if message:find("server recv: Connection reset by peer") then
+        return  -- 不记录该日志
+    end
+    print(os.date("%Y-%m-%d %H:%M:%S ") .. message)
+    os.execute("logger -t 'SS' '" .. message .. "'")
 end
 -- 分割字符串
 local function split(full, sep)

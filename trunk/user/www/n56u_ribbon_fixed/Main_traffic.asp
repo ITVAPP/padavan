@@ -60,9 +60,9 @@
    
    function renderGrid(data) {
        var grid = '<table class="table table-striped">';
-       grid += '<tr><th width="20%">IP</th><th width="25%">主机名</th><th>MAC</th>' +
-               '<th width="15%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'up\')">上行 ▼</th>' +
-               '<th width="15%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'down\')">下行 ▼</th></tr>';
+       grid += '<tr><th width="28%">名称</th><th width="20%">IP</th><th>MAC</th>' +
+               '<th width="16%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'up\')">上行 ▼</th>' +
+               '<th width="16%" style="text-align:right;cursor:pointer" onclick="sortDevices(\'down\')">下行 ▼</th></tr>';
 
        if (data.devices.length === 0) {
            grid += '<tr><td colspan="5" style="text-align:center">暂无设备流量数据</td></tr>';
@@ -79,8 +79,8 @@
                    continue;
                }
                grid += '<tr>';
-               grid += '<td>' + (device.ip || '-') + '</td>';
                grid += '<td>' + (device.hostname || '-') + '</td>';
+               grid += '<td>' + (device.ip || '-') + '</td>';
                grid += '<td>' + (device.mac || '-') + '</td>';
                grid += '<td style="text-align:right">' + (device.up_formatted || '0 B') + '</td>';
                grid += '<td style="text-align:right">' + (device.down_formatted || '0 B') + '</td>';
@@ -264,6 +264,13 @@ function loadTrafficStats() {
                                </div>
                                <div id="update_time" style="text-align:right;padding:5px;"></div>
                                <div id="traffic-grid"></div>
+                                    <table class="table">
+                                       <tbody>
+                                         <tr>
+                                           <td style="border: 0 none;"><center><button onclick="window.location.reload()" class="btn btn-primary" style="width: 219px">刷新</button></center></td>
+                                         </tr>
+                                       </tbody>
+                                   </table>
                            </div>
                        </div>
                    </div>

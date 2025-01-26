@@ -118,7 +118,7 @@ function checkAndAddCronTasks() {
       {
           id: "flytrap",
           comment: "# 每30分钟执行一次检查防火墙规则，并记录被加入黑名单的IP\n", 
-          task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh 'log_blocked_ips'"
+          task: "# */30 * * * * nice -n 18 /usr/bin/flytrap.sh 'log_blocked_ips' >> /tmp/flytrap.log 2>&1" 
       }
   ];
 
@@ -136,7 +136,7 @@ function checkAndAddCronTasks() {
   var patterns = {
       reboot: /28\s+5\s+\*\s+\*\s+\*\s+reboot/m,
       traffic: /\*\/5\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/traffic\.sh/m,
-      flytrap: /\*\/30\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/flytrap\.sh\s+['"]log_blocked_ips['"]/m
+      flytrap: /\*\/30\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/flytrap\.sh\s+['"]log_blocked_ips['"]\s+>>\s+\/tmp\/flytrap\.log\s+2>&1/m
   };
 
   // 简化判断逻辑,只检查任务是否存在

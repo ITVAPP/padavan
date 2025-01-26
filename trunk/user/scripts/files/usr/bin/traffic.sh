@@ -2,18 +2,45 @@
 # 流量统计脚本
 # 用途：统计局域网设备开机后的总流量
 # JSON位置：/tmp/traffic_stats.json
+
 # 定义变量
 JSON_FILE="/tmp/traffic_stats.json"
+
 # 检查目录
 if [ ! -d "/tmp" ]; then
   echo "Error: /tmp directory not found"
   exit 1
 fi
+
 # 信号处理函数
 cleanup() {
   exit 0
 }
 trap 'cleanup' INT TERM
+
+# 检查是否已有相同脚本实例在运行
+check_and_clean_process() {
+    local script_name=$(basename "$0")  # 获取当前脚本名称
+    local current_pid=$$  # 获取当前脚本的进程ID
+
+    # 查找当前脚本的运行实例
+    local running_pids=$($PS w | $GREP "$script_name" | $GREP -v grep | $GREP -v "$current_pid" | $AWK '{print $1}')
+
+    if [ ! -z "$running_pids" ]; then
+        echo "发现正在运行的同脚本实例，正在清理..."
+        for pid in $running_pids; do
+            if $KILL -0 "$pid" 2>/dev/null; then
+                echo "终止进程: $pid"
+                $KILL "$pid" 2>/dev/null
+                $SLEEP 1
+            fi
+        done
+        echo "同脚本进程清理完成"
+    else
+        echo "没有发现其他运行的脚本实例。"
+    fi
+}
+
 # 转换字节数为可读格式
 format_bytes() {
   local bytes=$1
@@ -25,6 +52,7 @@ format_bytes() {
       echo "$(($bytes/1024))KB"
   fi
 }
+
 # 获取主机名
 get_hostname() {
    local ip="$1"
@@ -67,10 +95,12 @@ get_hostname() {
        echo "$hostname"
    fi
 }
+
 # 创建JSON数组开始
 create_json_start() {
   echo -n "{\"time\":\"$(date '+%Y-%m-%d %H:%M:%S')\",\"devices\":[" > $JSON_FILE
 }
+
 # 添加设备到JSON
 add_device_json() {
   local ip="$1"
@@ -89,12 +119,14 @@ add_device_json() {
   
   echo -n "{\"ip\":\"$ip\",\"mac\":\"$mac\",\"hostname\":\"$hostname\",\"up_bytes\":$up,\"down_bytes\":$down,\"up_formatted\":\"$(format_bytes $up)\",\"down_formatted\":\"$(format_bytes $down)\"}" >> $JSON_FILE
 }
+
 # 创建JSON数组结束和添加总流量
 create_json_end() {
   local total_up="$1"
   local total_down="$2"
   echo -n "],\"total\":{\"up_bytes\":$total_up,\"down_bytes\":$total_down,\"up_formatted\":\"$(format_bytes $total_up)\",\"down_formatted\":\"$(format_bytes $total_down)\"}}" >> $JSON_FILE
 }
+
 # 创建流量统计函数
 traffic_stats() {
   # 检查STATS链是否存在，不存在则创建
@@ -102,6 +134,7 @@ traffic_stats() {
       iptables -N STATS
       iptables -I FORWARD -j STATS
   }
+  
   # 开始创建JSON
   create_json_start
   # 统计
@@ -132,5 +165,7 @@ traffic_stats() {
   # 完成JSON
   create_json_end "$TOTAL_UP" "$TOTAL_DOWN"
 }
+
 # 运行统计
+check_and_clean_process  # 添加此行来确保脚本只运行一个实例
 traffic_stats

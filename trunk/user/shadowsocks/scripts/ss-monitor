@@ -8,7 +8,7 @@ tunnel_process=$4
 v2ray_process=$5
 local_process=$6
 pdnsd_process=$7
-chinadnsng_process=$8
+chinadnsng_process=0 # 强制将 chinadnsng_process 设置为 0，避免触发相关逻辑
 i=0
 sock5_port=$(nvram get socks5_proxy_port)
 if echo $server|grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$">/dev/null; then         
@@ -132,31 +132,29 @@ do
 			start_dns_proxy
 		fi
 	fi
-	#chinadns-ng
-	if [ $chinadnsng_process -gt 0 ] ;then
-		icount=`ps -w | grep chinadns-ng | grep -v grep | wc -l`
-		if [ $icount -lt $chinadnsng_process ]  #如果进程挂掉就重启它
-		then
-			log "chinadns-ng tunnel error.restart!"
-			kill -9 chinadns-ng
-			#kill -9 dns2tcp
-			#dns2tcp -L"127.0.0.1#5353" -R"$(nvram get tunnel_forward)" >/dev/null 2>&1 &
-			stop_dns_proxy
-			start_dns_proxy
-			local_chnlist_file='/etc/storage/chinadns/chnlist_mini.txt'
-			if [ -f "$local_chnlist_file" ]; then
-			  log "启动chinadns分流，仅国外域名走DNS代理..."
-			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china -M -m $local_chnlist_file >/dev/null 2>&1 &
-			else
-			  log "启动chinadns分流，全部域名走DNS代理...本次不使用本地cdn域名文件$local_chnlist_file, 下次你自已可以创建它，文件中每行表示一个域名（不用要子域名）"
-			  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china >/dev/null 2>&1 &
-			fi
-			sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
-			sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
-			cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-no-resolv
-server=127.0.0.1#65353
-EOF
-		fi
-	fi
+	#chinadns-ng（已禁用）
+	# if [ $chinadnsng_process -gt 0 ] ;then
+	# 	icount=`ps -w | grep chinadns-ng | grep -v grep | wc -l`
+	# 	if [ $icount -lt $chinadnsng_process ]  #如果进程挂掉就重启它
+	# 	then
+	# 		log "chinadns-ng tunnel error.restart!"
+	# 		kill -9 chinadns-ng
+	# 		stop_dns_proxy
+	# 		start_dns_proxy
+	# 		local_chnlist_file='/etc/storage/chinadns/chnlist_mini.txt'
+	# 		if [ -f "$local_chnlist_file" ]; then
+	# 		  log "启动chinadns分流，仅国外域名走DNS代理..."
+	# 		  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china -M -m $local_chnlist_file >/dev/null 2>&1 &
+	# 		else
+	# 		  log "启动chinadns分流，全部域名走DNS代理...本次不使用本地cdn域名文件$local_chnlist_file, 下次你自已可以创建它，文件中每行表示一个域名（不用要子域名）"
+	# 		  chinadns-ng -b 0.0.0.0 -l 65353 -c $(nvram get china_dns) -t 127.0.0.1#5353 -4 china >/dev/null 2>&1 &
+	# 		fi
+	# 		sed -i '/no-resolv/d' /etc/storage/dnsmasq/dnsmasq.conf
+	# 		sed -i '/server=127.0.0.1/d' /etc/storage/dnsmasq/dnsmasq.conf
+	# 		cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
+	# no-resolv
+	# server=127.0.0.1#65353
+	# EOF
+	# 	fi
+	# fi
 done

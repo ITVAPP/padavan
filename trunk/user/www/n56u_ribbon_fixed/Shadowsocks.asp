@@ -50,25 +50,30 @@
 				function () {
 					var newHash = $j(this).attr('href').toLowerCase();
 					showTab(newHash);
-					return false;
+					return true;
 				});
 			$j("#close_add").click(function () {
 				$j("#vpnc_settings").fadeOut(200);
+				return true; 
 			});
-			$j("#btn_add_link").click(function () {
-				initSSParams();
-				editing_ss_id = 0;
-				document.getElementById("ss_setting_title").innerHTML = "添加节点";
-				$j("#vpnc_settings").fadeIn(200);
-			});
+$j("#btn_add_link").click(function () {
+    initSSParams();
+    editing_ss_id = 0;
+    document.getElementById("ss_setting_title").innerHTML = "添加节点";
+    $j("#vpnc_settings").fadeIn(200);
+    return true; // 添加此行
+});
 			$j("#btn_del_link").click(function () {
 				del_dlink();
+				return true;
 			});
 			$j("#btn_ping_link").click(function () {
 				ping_dlink();
+				return true;
 			});
 			$j("#btn_aping_link").click(function () {
 				aping_dlink();
+				return true;
 			});
 			$j("#s5_aut").change(function() { 
 			if($j("#s5_aut").is(':checked')){
@@ -694,23 +699,26 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 				'<a class="del_ss" href="javascript:void(0)" title="删除">删除</a>'
 			].join(' | ');
 		}
-		window.operateEvents = {
-			'click .edit_ss': function (e, value, row, index) {
-				editing_ss_id = row.ids;
-				document.getElementById("ss_setting_title").innerHTML = "编辑节点";
-				showSSEditor(row);
-			},
-			'click .copy_ss': function (e, value, row, index) {
-				editing_ss_id = 0;
-				document.getElementById("ss_setting_title").innerHTML = "复制节点";
-				showSSEditor(row);
-			},
-			'click .del_ss': function (e, value, row, index) {
-				if (confirm('确认删除' + row.alias + '吗？')) {
-					del(row.ids);
-				}
-			}
-		}
+window.operateEvents = {
+    'click .edit_ss': function (e, value, row, index) {
+        editing_ss_id = row.ids;
+        document.getElementById("ss_setting_title").innerHTML = "编辑节点";
+        showSSEditor(row);
+        return true; // 添加此行
+    },
+    'click .copy_ss': function (e, value, row, index) {
+        editing_ss_id = 0;
+        document.getElementById("ss_setting_title").innerHTML = "复制节点";
+        showSSEditor(row);
+        return true; // 添加此行 
+    },
+    'click .del_ss': function (e, value, row, index) {
+        if (confirm('确认删除' + row.alias + '吗？')) {
+            del(row.ids);
+        }
+        return true; // 添加此行
+    }
+};
 		function initSSParams() {
 			//ss
 			document.getElementById('ssp_type').value = 'ss';
@@ -1002,311 +1010,305 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 				return '';
 			return b64decsafe(v);
 		}
-		function import_ssr_url(btn, urlname, sid) {
-			var s = document.getElementById(urlname + '-status');
-			if (!s)
-				return false;
-			var ssrurl = prompt("在这里粘贴配置链接 ssr:// | ss:// | vmess:// | vless:// | trojan://", "");
-			if (ssrurl == null || ssrurl == "") {
-				s.innerHTML = "<font color='red'>用户取消</font>";
-				return false;
-			}
-			initSSParams();
-			s.innerHTML = "";
-			//var ssu = ssrurl.match(/ssr:\/\/([A-Za-z0-9_-]+)/i);
-			var ssu = ssrurl.split('://');
-			//console.log(ssu.length);
-			if ((ssu[0] != "ssr" && ssu[0] != "ss" && ssu[0] != "vmess" && ssu[0] != "vless" && ssu[0] != "trojan") || ssu[1] == "") {
-				s.innerHTML = "<font color='red'>无效格式</font>";
-				return false;
-			}
-			var event = document.createEvent("HTMLEvents");
-			event.initEvent("change", true, true);
-			initSSParams();
-			if (ssu[0] == "ssr") {
-				var sstr = b64decsafe(ssu[1]);
-				var ploc = sstr.indexOf("/?");
-				document.getElementById('ssp_type').value = "ssr";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				var url0, param = "";
-				if (ploc > 0) {
-					url0 = sstr.substr(0, ploc);
-					param = sstr.substr(ploc + 2);
-				}
-				var ssm = url0.match(/^(.+):([^:]+):([^:]*):([^:]+):([^:]*):([^:]+)/);
-				if (!ssm || ssm.length < 7)
-					return false;
-				var pdict = {};
-				if (param.length > 2) {
-					var a = param.split('&');
-					for (var i = 0; i < a.length; i++) {
-						var b = a[i].split('=');
-						pdict[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
-					}
-				}
-				document.getElementById('ssp_server').value = ssm[1];
-				document.getElementById('ssp_prot').value = ssm[2];
-				document.getElementById('ss_protocol').value = ssm[3];
-				document.getElementById('ss_method').value = ssm[4];
-				document.getElementById('ss_obfs').value = ssm[5];
-				document.getElementById('ss_password').value = b64decsafe(ssm[6]);
-				document.getElementById('ss_obfs_param').value = dictvalue(pdict, 'obfsparam');
-				document.getElementById('ss_protocol_param').value = dictvalue(pdict, 'protoparam');
-				var rem = pdict['remarks'];
-				if (typeof (rem) != 'undefined' && rem != '' && rem.length > 0)
-					document.getElementById('ssp_name').value = b64decutf8safe(rem);
-				s.innerHTML = "<font color='green'>导入ShadowsocksR配置信息成功</font>";
-				return false;
-			} else if (ssu[0] == "ss") {
-				var url0, param = "";
-				var sipIndex = ssu[1].indexOf("@");
-				var ploc = ssu[1].indexOf("#");
-				if (ploc > 0) {
-					url0 = ssu[1].substr(0, ploc);
-					param = ssu[1].substr(ploc + 1);
-				} else {
-					url0 = ssu[1]
-				}
-				if (sipIndex != -1) {
-				var userInfo = b64decsafe(url0.substr(0, sipIndex));
-				var temp = url0.substr(sipIndex + 1).split("/?");
-				var serverInfo = temp[0].split(":");
-				var server = serverInfo[0];
-				var port = serverInfo[1].replace("/","");
-				var method, password, plugin, pluginOpts;
-				if (temp[1]) {
-					var pluginInfo = decodeURIComponent(temp[1]);
-					var pluginIndex = pluginInfo.indexOf(";");
-					var pluginNameInfo = pluginInfo.substr(0, pluginIndex);
-					plugin = pluginNameInfo.substr(pluginNameInfo.indexOf("=") + 1);
-					pluginOpts = pluginInfo.substr(pluginIndex + 1);
-				}
-				var userInfoSplitIndex = userInfo.indexOf(":");
-				if (userInfoSplitIndex != -1) {
-					method = userInfo.substr(0, userInfoSplitIndex);
-					password = userInfo.substr(userInfoSplitIndex + 1);
-				}
-				document.getElementById('ssp_type').value = "ss";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				document.getElementById('ssp_server').value = server;
-				document.getElementById('ssp_prot').value = port;
-				document.getElementById('ss_password').value = password || "";
-				document.getElementById('ss_method').value = method || "";
-				document.getElementById('ss_plugin').value = plugin || "";
-				if (plugin != undefined && plugin != "") {
-				document.getElementById('ss_plugin_opts').value = pluginOpts || "";
-				}
-				if (param != undefined) {
-				document.getElementById('ssp_name').value = decodeURI(param);
-				}				
-				s.innerHTML = "<font color='green'>导入Shadowsocks配置信息成功</font>";
-				}
-			 else {
-				var sstr = b64decsafe(url0);
-				document.getElementById('ssp_type').value = "ss";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				var team = sstr.split('@');
-				console.log(param);
-				var part1 = team[0].split(':');
-				var part2 = team[1].split(':');
-				document.getElementById('ssp_server').value = part2[0];
-				document.getElementById('ssp_prot').value = part2[1];
-				document.getElementById('ss_password').value = part1[1];
-				document.getElementById('ss_method').value = part1[0];
-				s.innerHTML = "<font color='green'>导入Shadowsocks配置信息成功</font>";
-				}
-				if (param != undefined) {
-					document.getElementById('ssp_name').value = decodeURI(param);
-				}
-				return false;
-			} else if (ssu[0] == "trojan") {
-				var url0, param = "";
-				var ploc = ssu[1].indexOf("#");
-				if (ploc > 0) {
-					url0 = ssu[1].substr(0, ploc);
-					param = ssu[1].substr(ploc + 1);
-				} else {
-					url0 = ssu[1]
-				}
-				var sstr = url0;
-				document.getElementById('ssp_type').value = "trojan";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				var team = sstr.split('@');
-				var password = team[0]
-				var serverPart = team[1].split(':');
-				var others = serverPart[1].split('?');
-				var port = parseInt(others[0]);
-				var queryParam = {}
-				if (others.length > 1) {
-					var queryParams = others[1]
-					var queryArray = queryParams.split('&');
-					for (i = 0; i < queryArray.length; i++) {
-						var params = queryArray[i].split('=');
-						queryParam[decodeURIComponent(params[0])] = decodeURIComponent(params[1] || '');
-					}
-				}
-				document.getElementById('ssp_server').value = serverPart[0];
-				document.getElementById('ssp_prot').value = port || '443';;
-				document.getElementById('ss_password').value = password;
-				document.getElementById('v2_tls').value = '1';
-				document.getElementById('ssp_tls_host').value = queryParam.sni || '';
-				if (param != undefined) {
-					document.getElementById('ssp_name').value = decodeURI(param);
-				}
-				s.innerHTML = "<font color='green'>导入Trojan配置信息成功</font>";
-				return false;
-			} else if (ssu[0] == "vmess") {
-				var sstr = b64DecodeUnicode(ssu[1]);
-				console.log(sstr);
-				var ploc = sstr.indexOf("/?");
-				document.getElementById('ssp_type').value = "v2ray";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				var url0, param = "";
-				if (ploc > 0) {
-					url0 = sstr.substr(0, ploc);
-					param = sstr.substr(ploc + 2);
-				}
-				var ssm = JSON.parse(sstr);
-				document.getElementById('ssp_name').value = ssm.ps;
-				document.getElementById('ssp_server').value = ssm.add;
-				document.getElementById('ssp_prot').value = ssm.port;
-				document.getElementById('v2_alter_id').value = ssm.aid;
-				document.getElementById('v2_vmess_id').value = ssm.id;
-				document.getElementById('v2_transport').value = ssm.net;
-				document.getElementById('v2_transport').dispatchEvent(event);
-				if (ssm.net == "tcp") {
-					if (ssm.type && ssm.type != "http") {
-						ssm.type = "none"
-					}
-					document.getElementById('v2_tcp_guise').value = ssm.type;
-					document.getElementById('v2_http_host').value = ssm.host;
-					if (ssm.path != undefined){
-						document.getElementById('v2_http_path').value = ssm.path;
-					}
-					else {
-						document.getElementById('v2_http_path').value = '/';
-					}
-				} 
-				if (ssm.net == "ws") {
-					document.getElementById('v2_ws_host').value = ssm.host;
-					document.getElementById('v2_ws_path').value = ssm.path;
-				}
-				if (ssm.net == "grpc") {
-					document.getElementById('v2_grpc_path').value = ssm.path;
-				}
-				if (ssm.net == "h2") {
-					document.getElementById('v2_h2_host').value = ssm.host;
-					document.getElementById('v2_h2_path').value = ssm.path;
-				}
-				if (ssm.net == "httpupgrade") {
-					document.getElementById('v2_httpupgrade_host').value = ssm.host;
-					document.getElementById('v2_httpupgrade_path').value = ssm.path;
-				}
-				if (ssm.net == "splithttp") {
-					document.getElementById('v2_splithttp_host').value = ssm.host;
-					document.getElementById('v2_splithttp_path').value = ssm.path;
-				}
-				if (ssm.tls == "tls") {
-					document.getElementById('v2_tls').value = '1';
-					//document.getElementById('v2_tls').checked = true;
-					document.getElementById('ssp_insecure').value = 1;
-					document.getElementById('ssp_insecure').checked = true;
-					document.getElementById('ssp_tls_host').value = ssm.host;
-				}
-				s.innerHTML = "<font color='green'>导入V2ray配置信息成功</font>";
-				return false;
-			} else if (ssu[0] == "vless") {
-				var url0, param = "";
-				var ploc = ssu[1].indexOf("#");
-				if (ploc > 0) {
-					url0 = ssu[1].substr(0, ploc);
-					param = ssu[1].substr(ploc + 1);
-				} else {
-					url0 = ssu[1]
-				}
-				if (param != undefined) {
-					document.getElementById('ssp_name').value = decodeURI(param);
-				}
-				var sstr = url0;
-				var team = sstr.split('@');
-				var password = team[0]
-				var serverPart = team[1].split(':');
-				var others = serverPart[1].split('?');
-				var port = others[0]
-				var queryParam = {}
-				if (others.length > 1) {
-				var queryParams = others[1]
-				var queryArray = queryParams.split('&');
-				for (i = 0; i < queryArray.length; i++) {
-					var params = queryArray[i].split('=');
-					queryParam[decodeURIComponent(params[0])] = decodeURIComponent(params[1] || '');
-									}
-							}
-				document.getElementById('ssp_server').value = serverPart[0];
-				document.getElementById('ssp_prot').value = port;
-				document.getElementById('v2_vmess_id').value = password;
-				document.getElementById('v2_alter_id').value = "0";
-				document.getElementById('ssp_type').value = "xray";
-				document.getElementById('ssp_type').dispatchEvent(event);
-				document.getElementById('v2_security').value = queryParam.encryption || "none";
-				document.getElementById('v2_transport').value = queryParam.type || "tcp";
-				document.getElementById('v2_transport').dispatchEvent(event);
+function import_ssr_url(btn, urlname, sid) {
+    var s = document.getElementById(urlname + '-status');
+    if (!s) return;
 
-				if (queryParam.security == "tls") {
-					document.getElementById('v2_tls').value = '1';
-					document.getElementById('v2_flow').value = '0';
-					//document.getElementById('v2_tls').checked = true;
-					document.getElementById('ssp_insecure').value = 0;
-					document.getElementById('ssp_insecure').checked = false;
-					document.getElementById('ssp_tls_host').value = queryParam.sni || serverPart[0];
-				}
+    var ssrurl = prompt("在这里粘贴配置链接 ssr:// | ss:// | vmess:// | vless:// | trojan://", "");
+    if (ssrurl == null || ssrurl == "") {
+        s.innerHTML = "<font color='red'>用户取消</font>";
+        return;
+    }
 
-				if (queryParam.type == "ws") {
-					document.getElementById('v2_ws_host').value = queryParam.host;
-					document.getElementById('v2_ws_path').value = queryParam.path;
-				}
-				if (queryParam.type == "grpc") {
-					document.getElementById('v2_grpc_path').value =  queryParam.serviceName;
-				}
-				if (queryParam.type == "h2") {
-					document.getElementById('v2_h2_host').value = queryParam.host;
-					document.getElementById('v2_h2_path').value = queryParam.path;
-				}
-				if (queryParam.type == "httpupgrade") {
-					document.getElementById('v2_httpupgrade_host').value = queryParam.host;
-					document.getElementById('v2_httpupgrade_path').value =  queryParam.path;
-				}
-				if (queryParam.type == "splithttp") {
-					document.getElementById('v2_splithttp_host').value = queryParam.host;
-					document.getElementById('v2_splithttp_path').value =  queryParam.path;
-				}
-				if (queryParam.security == "reality") {
-					document.getElementById('v2_tls').value = '2';
-					if (queryParam.flow != undefined) {
-					    if(queryParam.flow == 'xtls-rprx-vision'){
-					    	document.getElementById('v2_flow').value = '1';
-					    }
-					    else if(queryParam.flow == 'xtls-rprx-vision-udp443'){
-					    	document.getElementById('v2_flow').value = '2';
-					    }
-					    else
-					    {
-					    	document.getElementById('v2_flow').value = '0';
-					    }
-					}
-					else
-					{
-					    document.getElementById('v2_flow').value = '1';
-					}
-					//document.getElementById('v2_tls').checked = true;
-					document.getElementById('ssp_insecure').value = 0;
-					document.getElementById('ssp_insecure').checked = false;
-					document.getElementById('ssp_tls_host').value = queryParam.sni || serverPart[0];
-				}
-				s.innerHTML = "<font color='green'>导入Xray配置信息成功</font>";
-				return false;
-			}
-		}
+    initSSParams();
+    s.innerHTML = "";
+    var ssu = ssrurl.split('://');
+    if ((ssu[0] != "ssr" && ssu[0] != "ss" && ssu[0] != "vmess" && ssu[0] != "vless" && ssu[0] != "trojan") || ssu[1] == "") {
+        s.innerHTML = "<font color='red'>无效格式</font>";
+        return;
+    }
+
+    var event = document.createEvent("HTMLEvents");
+    event.initEvent("change", true, true);
+    initSSParams();
+
+    if (ssu[0] == "ssr") {
+        var sstr = b64decsafe(ssu[1]);
+        var ploc = sstr.indexOf("/?");
+        document.getElementById('ssp_type').value = "ssr";
+        document.getElementById('ssp_type').dispatchEvent(event);
+        var url0, param = "";
+        if (ploc > 0) {
+            url0 = sstr.substr(0, ploc);
+            param = sstr.substr(ploc + 2);
+        }
+        var ssm = url0.match(/^(.+):([^:]+):([^:]*):([^:]+):([^:]*):([^:]+)/);
+        if (!ssm || ssm.length < 7) return;
+        
+        var pdict = {};
+        if (param.length > 2) {
+            var a = param.split('&');
+            for (var i = 0; i < a.length; i++) {
+                var b = a[i].split('=');
+                pdict[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
+            }
+        }
+        document.getElementById('ssp_server').value = ssm[1];
+        document.getElementById('ssp_prot').value = ssm[2];
+        document.getElementById('ss_protocol').value = ssm[3];
+        document.getElementById('ss_method').value = ssm[4];
+        document.getElementById('ss_obfs').value = ssm[5];
+        document.getElementById('ss_password').value = b64decsafe(ssm[6]);
+        document.getElementById('ss_obfs_param').value = dictvalue(pdict, 'obfsparam');
+        document.getElementById('ss_protocol_param').value = dictvalue(pdict, 'protoparam');
+        var rem = pdict['remarks'];
+        if (typeof (rem) != 'undefined' && rem != '' && rem.length > 0)
+            document.getElementById('ssp_name').value = b64decutf8safe(rem);
+        s.innerHTML = "<font color='green'>导入ShadowsocksR配置信息成功</font>";
+        return;
+    } else if (ssu[0] == "ss") {
+        var url0, param = "";
+        var sipIndex = ssu[1].indexOf("@");
+        var ploc = ssu[1].indexOf("#");
+        if (ploc > 0) {
+            url0 = ssu[1].substr(0, ploc);
+            param = ssu[1].substr(ploc + 1);
+        } else {
+            url0 = ssu[1]
+        }
+        if (sipIndex != -1) {
+            var userInfo = b64decsafe(url0.substr(0, sipIndex));
+            var temp = url0.substr(sipIndex + 1).split("/?");
+            var serverInfo = temp[0].split(":");
+            var server = serverInfo[0];
+            var port = serverInfo[1].replace("/","");
+            var method, password, plugin, pluginOpts;
+            if (temp[1]) {
+                var pluginInfo = decodeURIComponent(temp[1]);
+                var pluginIndex = pluginInfo.indexOf(";");
+                var pluginNameInfo = pluginInfo.substr(0, pluginIndex);
+                plugin = pluginNameInfo.substr(pluginNameInfo.indexOf("=") + 1);
+                pluginOpts = pluginInfo.substr(pluginIndex + 1);
+            }
+            var userInfoSplitIndex = userInfo.indexOf(":");
+            if (userInfoSplitIndex != -1) {
+                method = userInfo.substr(0, userInfoSplitIndex);
+                password = userInfo.substr(userInfoSplitIndex + 1);
+            }
+            document.getElementById('ssp_type').value = "ss";
+            document.getElementById('ssp_type').dispatchEvent(event);
+            document.getElementById('ssp_server').value = server;
+            document.getElementById('ssp_prot').value = port;
+            document.getElementById('ss_password').value = password || "";
+            document.getElementById('ss_method').value = method || "";
+            document.getElementById('ss_plugin').value = plugin || "";
+            if (plugin != undefined && plugin != "") {
+                document.getElementById('ss_plugin_opts').value = pluginOpts || "";
+            }
+            if (param != undefined) {
+                document.getElementById('ssp_name').value = decodeURI(param);
+            }
+            s.innerHTML = "<font color='green'>导入Shadowsocks配置信息成功</font>";
+        } else {
+            var sstr = b64decsafe(url0);
+            document.getElementById('ssp_type').value = "ss";
+            document.getElementById('ssp_type').dispatchEvent(event);
+            var team = sstr.split('@');
+            console.log(param);
+            var part1 = team[0].split(':');
+            var part2 = team[1].split(':');
+            document.getElementById('ssp_server').value = part2[0];
+            document.getElementById('ssp_prot').value = part2[1];
+            document.getElementById('ss_password').value = part1[1];
+            document.getElementById('ss_method').value = part1[0];
+            s.innerHTML = "<font color='green'>导入Shadowsocks配置信息成功</font>";
+        }
+        if (param != undefined) {
+            document.getElementById('ssp_name').value = decodeURI(param);
+        }
+        return;
+    } else if (ssu[0] == "trojan") {
+        var url0, param = "";
+        var ploc = ssu[1].indexOf("#");
+        if (ploc > 0) {
+            url0 = ssu[1].substr(0, ploc);
+            param = ssu[1].substr(ploc + 1);
+        } else {
+            url0 = ssu[1]
+        }
+        var sstr = url0;
+        document.getElementById('ssp_type').value = "trojan";
+        document.getElementById('ssp_type').dispatchEvent(event);
+        var team = sstr.split('@');
+        var password = team[0]
+        var serverPart = team[1].split(':');
+        var others = serverPart[1].split('?');
+        var port = parseInt(others[0]);
+        var queryParam = {}
+        if (others.length > 1) {
+            var queryParams = others[1]
+            var queryArray = queryParams.split('&');
+            for (i = 0; i < queryArray.length; i++) {
+                var params = queryArray[i].split('=');
+                queryParam[decodeURIComponent(params[0])] = decodeURIComponent(params[1] || '');
+            }
+        }
+        document.getElementById('ssp_server').value = serverPart[0];
+        document.getElementById('ssp_prot').value = port || '443';
+        document.getElementById('ss_password').value = password;
+        document.getElementById('v2_tls').value = '1';
+        document.getElementById('ssp_tls_host').value = queryParam.sni || '';
+        if (param != undefined) {
+            document.getElementById('ssp_name').value = decodeURI(param);
+        }
+        s.innerHTML = "<font color='green'>导入Trojan配置信息成功</font>";
+        return;
+    } else if (ssu[0] == "vmess") {
+        var sstr = b64DecodeUnicode(ssu[1]);
+        console.log(sstr);
+        var ploc = sstr.indexOf("/?");
+        document.getElementById('ssp_type').value = "v2ray";
+        document.getElementById('ssp_type').dispatchEvent(event);
+        var url0, param = "";
+        if (ploc > 0) {
+            url0 = sstr.substr(0, ploc);
+            param = sstr.substr(ploc + 2);
+        }
+        var ssm = JSON.parse(sstr);
+        document.getElementById('ssp_name').value = ssm.ps;
+        document.getElementById('ssp_server').value = ssm.add;
+        document.getElementById('ssp_prot').value = ssm.port;
+        document.getElementById('v2_alter_id').value = ssm.aid;
+        document.getElementById('v2_vmess_id').value = ssm.id;
+        document.getElementById('v2_transport').value = ssm.net;
+        document.getElementById('v2_transport').dispatchEvent(event);
+        if (ssm.net == "tcp") {
+            if (ssm.type && ssm.type != "http") {
+                ssm.type = "none"
+            }
+            document.getElementById('v2_tcp_guise').value = ssm.type;
+            document.getElementById('v2_http_host').value = ssm.host;
+            if (ssm.path != undefined){
+                document.getElementById('v2_http_path').value = ssm.path;
+            } else {
+                document.getElementById('v2_http_path').value = '/';
+            }
+        }
+        if (ssm.net == "ws") {
+            document.getElementById('v2_ws_host').value = ssm.host;
+            document.getElementById('v2_ws_path').value = ssm.path;
+        }
+        if (ssm.net == "grpc") {
+            document.getElementById('v2_grpc_path').value = ssm.path;
+        }
+        if (ssm.net == "h2") {
+            document.getElementById('v2_h2_host').value = ssm.host;
+            document.getElementById('v2_h2_path').value = ssm.path;
+        }
+        if (ssm.net == "httpupgrade") {
+            document.getElementById('v2_httpupgrade_host').value = ssm.host;
+            document.getElementById('v2_httpupgrade_path').value = ssm.path;
+        }
+        if (ssm.net == "splithttp") {
+            document.getElementById('v2_splithttp_host').value = ssm.host;
+            document.getElementById('v2_splithttp_path').value = ssm.path;
+        }
+        if (ssm.tls == "tls") {
+            document.getElementById('v2_tls').value = '1';
+            document.getElementById('ssp_insecure').value = 1;
+            document.getElementById('ssp_insecure').checked = true;
+            document.getElementById('ssp_tls_host').value = ssm.host;
+        }
+        s.innerHTML = "<font color='green'>导入V2ray配置信息成功</font>";
+        return;
+    } else if (ssu[0] == "vless") {
+        var url0, param = "";
+        var ploc = ssu[1].indexOf("#");
+        if (ploc > 0) {
+            url0 = ssu[1].substr(0, ploc);
+            param = ssu[1].substr(ploc + 1);
+        } else {
+            url0 = ssu[1]
+        }
+        if (param != undefined) {
+            document.getElementById('ssp_name').value = decodeURI(param);
+        }
+        var sstr = url0;
+        var team = sstr.split('@');
+        var password = team[0]
+        var serverPart = team[1].split(':');
+        var others = serverPart[1].split('?');
+        var port = others[0]
+        var queryParam = {}
+        if (others.length > 1) {
+            var queryParams = others[1]
+            var queryArray = queryParams.split('&');
+            for (i = 0; i < queryArray.length; i++) {
+                var params = queryArray[i].split('=');
+                queryParam[decodeURIComponent(params[0])] = decodeURIComponent(params[1] || '');
+            }
+        }
+        document.getElementById('ssp_server').value = serverPart[0];
+        document.getElementById('ssp_prot').value = port;
+        document.getElementById('v2_vmess_id').value = password;
+        document.getElementById('v2_alter_id').value = "0";
+        document.getElementById('ssp_type').value = "xray";
+        document.getElementById('ssp_type').dispatchEvent(event);
+        document.getElementById('v2_security').value = queryParam.encryption || "none";
+        document.getElementById('v2_transport').value = queryParam.type || "tcp";
+        document.getElementById('v2_transport').dispatchEvent(event);
+
+        if (queryParam.security == "tls") {
+            document.getElementById('v2_tls').value = '1';
+            document.getElementById('v2_flow').value = '0';
+            document.getElementById('ssp_insecure').value = 0;
+            document.getElementById('ssp_insecure').checked = false;
+            document.getElementById('ssp_tls_host').value = queryParam.sni || serverPart[0];
+        }
+
+        if (queryParam.type == "ws") {
+            document.getElementById('v2_ws_host').value = queryParam.host;
+            document.getElementById('v2_ws_path').value = queryParam.path;
+        }
+        if (queryParam.type == "grpc") {
+            document.getElementById('v2_grpc_path').value = queryParam.serviceName;
+        }
+        if (queryParam.type == "h2") {
+            document.getElementById('v2_h2_host').value = queryParam.host;
+            document.getElementById('v2_h2_path').value = queryParam.path;
+        }
+        if (queryParam.type == "httpupgrade") {
+            document.getElementById('v2_httpupgrade_host').value = queryParam.host;
+            document.getElementById('v2_httpupgrade_path').value = queryParam.path;
+        }
+        if (queryParam.type == "splithttp") {
+            document.getElementById('v2_splithttp_host').value = queryParam.host;
+            document.getElementById('v2_splithttp_path').value = queryParam.path;
+        }
+        if (queryParam.security == "reality") {
+            document.getElementById('v2_tls').value = '2';
+            if (queryParam.flow != undefined) {
+                if(queryParam.flow == 'xtls-rprx-vision'){
+                    document.getElementById('v2_flow').value = '1';
+                }
+                else if(queryParam.flow == 'xtls-rprx-vision-udp443'){
+                    document.getElementById('v2_flow').value = '2';
+                }
+                else {
+                	document.getElementById('v2_flow').value = '0';
+                }
+            }
+            else {
+                document.getElementById('v2_flow').value = '1';
+            }
+            document.getElementById('ssp_insecure').value = 0;
+            document.getElementById('ssp_insecure').checked = false;
+            document.getElementById('ssp_tls_host').value = queryParam.sni || serverPart[0];
+        }
+        s.innerHTML = "<font color='green'>导入Xray配置信息成功</font>";
+        return;
+    }
+}
 		//-----------导入链接结束
 		function check_Timefield_checkbox() {
 			if (document.form.ss_date_x_Sun.checked == true ||
@@ -1726,54 +1728,6 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 															<select name="pdnsd_enable" id="pdnsd_enable" class="input" style="width: 200px;" onchange="switch_dns()">
 																<option value="0">使用dnsproxy查询</option>
 																<option value="1">使用dns2tcp查询</option>
-															</select>
-														</td>
-													</tr>
-													<tr>
-														<th width="50%">加载chinadns-ng：(仅绕过模式生效)</th>
-														<td>
-															<div class="main_itoggle">
-																<div id="ss_chdns_on_of">
-																	<input type="checkbox" id="ss_chdns_fake" <% nvram_match_x("", "ss_chdns", "1", "value=1 checked"); %><% nvram_match_x("", "ss_chdns", "0", "value=0"); %>>
-																</div>
-															</div>
-															<div style="position: absolute; margin-left: -10000px;">
-																<input type="radio" value="1" name="ss_chdns" id="ss_chdns_1" <% nvram_match_x("", "ss_chdns", "1", "checked"); %>><#checkbox_Yes#>
-																<input type="radio" value="0" name="ss_chdns" id="ss_chdns_0" <% nvram_match_x("", "ss_chdns", "0", "checked"); %>><#checkbox_No#>
-															</div>
-														</td>
-													</tr>
-													<tr id="row_china_dns" style="display:none;">
-														<th width="50%">国内DNS：(仅chinadns-ng生效)</th>
-														<td>
-															<select name="china_dns" class="input" style="width: 200px;">
-																<option value="1.2.4.8#53">CNNIC DNS (1.2.4.8)</option>
-																<option value="223.5.5.5#53">Ali DNS (223.5.5.5)</option>
-																<option value="117.50.11.11#53">One DNS (117.50.11.11)</option>
-																<option value="180.76.76.76#53">Baidu DNS (180.76.76.76)</option>
-																<option value="119.29.29.29#53">DNSPOD DNS (119.29.29.29)</option>
-																<option value="114.114.114.114#53">114 DNS (114.114.114.114)</option>
-															</select>
-														</td>
-													</tr>
-													<tr id="row_tunnel_forward" style="display:none;">
-														<th width="50%">国外DNS：</th>
-														<td>
-															<select name="tunnel_forward" class="input" style="width: 200px;">
-																<option value="1.1.1.1#53">Cloudflare DNS (1.1.1.1)</option>
-																<option value="1.0.0.1#53">Cloudflare DNS (1.0.0.1)</option>
-																<option value="4.2.2.1#53">Level 3 Public DNS (4.2.2.1)</option>
-																<option value="4.2.2.2#53">Level 3 Public DNS (4.2.2.2)</option>
-																<option value="4.2.2.3#53">Level 3 Public DNS (4.2.2.3)</option>
-																<option value="4.2.2.4#53">Level 3 Public DNS (4.2.2.4)</option>
-																<option value="8.8.4.4#53">Google Public DNS (8.8.4.4)</option>
-																<option value="8.8.8.8#53">Google Public DNS (8.8.8.8)</option>
-																<option value="208.67.222.222#53">OpenDNS (208.67.222.222)</option>
-																<option value="208.67.220.220#53">OpenDNS (208.67.220.220)</option>
-																<option value="209.244.0.3#53">Level 3 Public DNS (209.244.0.3)</option>
-																<option value="209.244.0.4#53">Level 3 Public DNS (209.244.0.4)</option>
-																<option value="114.114.114.114#53">Oversea Mode DNS(114.114.114.114)</option>
-																<option value="114.114.115.115#53">Oversea Mode DNS(114.114.115.115)</option>
 															</select>
 														</td>
 													</tr>
@@ -2496,15 +2450,6 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 											</div>
 											<div id="wnd_ss_help" style="display:none">
 												<table width="100%" cellpadding="4" cellspacing="0" class="table">
-													<tr>
-														<th colspan="2" style="background-color: #E3E3E3;">chinadns-ng说明:</th>
-													</tr>
-													<tr>
-														<th width="100%">绕过大陆模式启用chinadns会加载CDN域名规则来分流常用网站跑国内DNS,加载gfwlist列表来分流到国外DNS</th>
-													</tr>
-													<tr>
-														<th width="100%">此模式会占用一部分内存资源,内存少的机器请谨慎开启。</th>
-													</tr>
 													<tr>
 														<th colspan="2" style="background-color: #E3E3E3;">进程资源限制说明: 此功能底层使用 <a href="https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v1/cgroups.html">cgroups</a></th>
 													</tr>

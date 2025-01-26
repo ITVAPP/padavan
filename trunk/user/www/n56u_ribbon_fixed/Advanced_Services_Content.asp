@@ -136,7 +136,7 @@ function checkAndAddCronTasks() {
   var patterns = {
       reboot: /28\s+5\s+\*\s+\*\s+\*\s+reboot/m,
       traffic: /\*\/5\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/traffic\.sh/m,
-      flytrap: /\*\/30\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/flytrap\.sh\s+['"]log_blocked_ips['"]\s+>>\s+\/tmp\/flytrap\.log\s+2>&1/m
+      flytrap: /\*\/30\s+\*\s+\*\s+\*\s+\*\s+nice\s+-n\s+18\s+\/usr\/bin\/flytrap\.sh\s+['"]log_blocked_ips['"]\s+>>\s+\/tmp\/flytrap\.log/m
   };
 
   // 简化判断逻辑,只检查任务是否存在

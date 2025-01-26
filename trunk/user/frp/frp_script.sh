@@ -1,8 +1,8 @@
 #!/bin/sh
 killall frpc
 mkdir -p /tmp/frp
-#启动frp功能后会运行以下脚本
-#请自行修改 token 用于对客户端连接进行身份验证
+# frpc 客户端版本 V35.1
+# 请自行修改 token 用于对客户端连接进行身份验证
 # IP查询： http://119.29.29.29/d?dn=github.com
 
 cat > "/tmp/frp/frpc.ini" <<-\EOF
@@ -21,17 +21,11 @@ token = "12345678"
 # 用于连接服务器的通信协议, 支持tcp、kcp和websocket
 protocol = tcp
 
-# 连接服务器时等待连接完成的最大时间。默认值为18秒
-# dial_server_timeout = 18
-
 # 预先建立的连接数量，默认值为0
 pool_count = 8
 
 # 是否启用tcp流复用，默认为true，必须与frps保持一致
 tcp_mux = true
-
-# 指定tcp复用的保活间隔时间，仅在tcp_mux为true时有效
-tcp_mux_keepalive_interval = 60
 
 # 你的代理名称将被更改为{user}.{proxy}
 user = Aicss_Net

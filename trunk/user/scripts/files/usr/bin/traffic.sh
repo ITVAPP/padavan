@@ -1,10 +1,17 @@
 #!/bin/sh
 # 流量统计脚本
 # 用途：统计局域网设备开机后的总流量
-# JSON位置：/tmp/traffic_stats.json
 
 # 定义变量
 JSON_FILE="/tmp/traffic_stats.json"
+
+# 获取命令路径
+PS=$(which ps 2>/dev/null)
+GREP=$(which grep 2>/dev/null)
+AWK=$(which awk 2>/dev/null)
+KILL=$(which kill 2>/dev/null)
+SLEEP=$(which sleep 2>/dev/null)
+IPTABLES_PATH=$(which iptables 2>/dev/null)
 
 # 检查目录
 if [ ! -d "/tmp" ]; then
@@ -130,9 +137,9 @@ create_json_end() {
 # 创建流量统计函数
 traffic_stats() {
   # 检查STATS链是否存在，不存在则创建
-  iptables -L STATS >/dev/null 2>&1 || {
-      iptables -N STATS
-      iptables -I FORWARD -j STATS
+  $IPTABLES_PATH -L STATS >/dev/null 2>&1 || {
+      $IPTABLES_PATH -N STATS
+      $IPTABLES_PATH -I FORWARD -j STATS
   }
   
   # 开始创建JSON
@@ -145,12 +152,12 @@ traffic_stats() {
   for ip in $(arp -n | grep -v incomplete | grep "\[ether\]" | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
   do
       # 检查IP是否已有规则，没有则添加
-      iptables -L STATS -v | grep -q $ip || {
-          iptables -A STATS -s $ip
-          iptables -A STATS -d $ip
+      $IPTABLES_PATH -L STATS -v | grep -q $ip || {
+          $IPTABLES_PATH -A STATS -s $ip
+          $IPTABLES_PATH -A STATS -d $ip
       }
-      UP=$(iptables -L STATS -nvx | grep "$ip" | head -n 1 | awk '{print $2}')
-      DOWN=$(iptables -L STATS -nvx | grep "$ip" | tail -n 1 | awk '{print $2}')
+      UP=$($IPTABLES_PATH -L STATS -nvx | grep "$ip" | head -n 1 | awk '{print $2}')
+      DOWN=$($IPTABLES_PATH -L STATS -nvx | grep "$ip" | tail -n 1 | awk '{print $2}')
       
       UP=${UP:-0}
       DOWN=${DOWN:-0}

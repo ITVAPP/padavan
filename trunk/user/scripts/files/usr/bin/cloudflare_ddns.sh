@@ -152,7 +152,7 @@ curl_with_timeout() {
     max_retries=2
     
     while [ $retry_count -lt $max_retries ]; do
-        if echo "$CURL" | grep -q "^busybox"; then
+        if echo "$CURL" | $GREP -q "^busybox"; then
             # 如果是 busybox curl，移除不支持的选项
             response=$($CURL -s \
                       "$@" \
@@ -380,7 +380,7 @@ get_zone_id() {
         # 调试输出
         # log_message "调试" "API响应: $response"
         
-        ZONE_ID=$(echo "$response" | $GREP -o '"id":"[^"]*","name":"'"$DOMAIN"'"' | cut -d'"' -f4)
+        ZONE_ID=$(echo "$response" | $AWK -F'"' '/"id":"[^"]*","name":"'"$DOMAIN"'"/{print $4; exit}')
         
         if [ ! -z "$ZONE_ID" ]; then
             log_message "信息" "获取到Zone ID: $ZONE_ID"

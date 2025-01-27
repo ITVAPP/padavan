@@ -12,6 +12,27 @@ AWK=$(which awk 2>/dev/null)
 KILL=$(which kill 2>/dev/null)
 SLEEP=$(which sleep 2>/dev/null)
 IPTABLES_PATH=$(which iptables 2>/dev/null)
+HEAD=$(which head 2>/dev/null)
+TAIL=$(which tail 2>/dev/null)
+DATE=$(which date 2>/dev/null)
+BASENAME=$(which basename 2>/dev/null)
+CUT=$(which cut 2>/dev/null)
+
+# 缓存数据以减少命令调用
+ARP_CACHE=""
+STATS_CACHE=""
+
+# 检查必需命令
+check_required_commands() {
+    if [ -z "$IPTABLES_PATH" ]; then
+        echo "错误: 未找到 iptables 命令"
+        exit 1
+    fi
+    if [ -z "$GREP" ] || [ -z "$AWK" ]; then
+        echo "错误: 基本文本处理命令缺失"
+        exit 1
+    fi
+}
 
 # 检查目录
 if [ ! -d "/tmp" ]; then
@@ -27,7 +48,7 @@ trap 'cleanup' INT TERM
 
 # 检查是否已有相同脚本实例在运行
 check_and_clean_process() {
-    local script_name=$(basename "$0")  # 获取当前脚本名称
+    local script_name=$($BASENAME "$0")  # 获取当前脚本名称
     local current_pid=$$  # 获取当前脚本的进程ID
 
     # 查找当前脚本的运行实例
@@ -63,9 +84,9 @@ format_bytes() {
 # 获取主机名
 get_hostname() {
    local ip="$1"
-   local line=$(grep "$ip" /tmp/dnsmasq.leases)
-   local hostname=$(echo "$line" | awk '{print $4}')
-   local mac=$(echo "$line" | awk '{print $2}')
+   local line=$($GREP "$ip" /tmp/dnsmasq.leases)
+   local hostname=$(echo "$line" | $AWK '{print $4}')
+   local mac=$(echo "$line" | $AWK '{print $2}')
    
    # 如果主机名为空或 Unknown
    if [ -z "$hostname" ] || [ "$hostname" = "Unknown" ]; then
@@ -84,7 +105,7 @@ get_hostname() {
    fi
    
    # 如果是 * 或 wlan0 或者名字包含MAC地址,则使用MAC前缀识别
-   if [ "$hostname" = "*" ] || [ "$hostname" = "wlan0" ] || echo "$hostname" | grep -q "[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}" ]; then
+   if [ "$hostname" = "*" ] || [ "$hostname" = "wlan0" ] || echo "$hostname" | $GREP -q "[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}:[0-9a-fA-F]\{2\}" ]; then
        case "${mac:0:8}" in
            # Apple 设备
            "d8:96:95"|"ac:cf:85"|"a8:bb:cf"|"68:d9:3c"|"f4:5c:89"|"88:66:a5") echo "Apple";;
@@ -98,14 +119,14 @@ get_hostname() {
        esac
    else
        # 取第一个空格前的内容作为主机名
-       hostname=$(echo "$hostname" | cut -d' ' -f1)
+       hostname=$(echo "$hostname" | $CUT -d' ' -f1)
        echo "$hostname"
    fi
 }
 
 # 创建JSON数组开始
 create_json_start() {
-  echo -n "{\"time\":\"$(date '+%Y-%m-%d %H:%M:%S')\",\"devices\":[" > $JSON_FILE
+  echo -n "{\"time\":\"$($DATE '+%Y-%m-%d %H:%M:%S')\",\"devices\":[" > $JSON_FILE
 }
 
 # 添加设备到JSON
@@ -115,8 +136,8 @@ add_device_json() {
   local down="$3"
   local first="$4"
   
-  # 获取MAC地址
-  local mac=$(arp -n | grep "$ip" | head -n 1 | awk '{print $4}')
+  # 从缓存中获取MAC地址
+  local mac=$(echo "$ARP_CACHE" | $GREP "$ip" | $HEAD -n 1 | $AWK '{print $4}')
   # 获取主机名
   local hostname=$(get_hostname "$ip")
   
@@ -142,6 +163,10 @@ traffic_stats() {
       $IPTABLES_PATH -I FORWARD -j STATS
   }
   
+  # 先获取缓存数据
+  ARP_CACHE=$(arp -n)
+  STATS_CACHE=$($IPTABLES_PATH -L STATS -nvx)
+  
   # 开始创建JSON
   create_json_start
   # 统计
@@ -149,15 +174,20 @@ traffic_stats() {
   TOTAL_DOWN=0
   FIRST=1
   
-  for ip in $(arp -n | grep -v incomplete | grep "\[ether\]" | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
+  # 从ARP缓存中获取IP列表
+  for ip in $(echo "$ARP_CACHE" | $AWK '/[[:space:]]ether[[:space:]]/ {print $1}')
   do
       # 检查IP是否已有规则，没有则添加
-      $IPTABLES_PATH -L STATS -v | grep -q $ip || {
+      echo "$STATS_CACHE" | $GREP -q $ip || {
           $IPTABLES_PATH -A STATS -s $ip
           $IPTABLES_PATH -A STATS -d $ip
+          # 更新缓存
+          STATS_CACHE=$($IPTABLES_PATH -L STATS -nvx)
       }
-      UP=$($IPTABLES_PATH -L STATS -nvx | grep "$ip" | head -n 1 | awk '{print $2}')
-      DOWN=$($IPTABLES_PATH -L STATS -nvx | grep "$ip" | tail -n 1 | awk '{print $2}')
+      
+      # 从缓存中获取流量数据
+      UP=$(echo "$STATS_CACHE" | $GREP "$ip" | $HEAD -n 1 | $AWK '{print $2}')
+      DOWN=$(echo "$STATS_CACHE" | $GREP "$ip" | $TAIL -n 1 | $AWK '{print $2}')
       
       UP=${UP:-0}
       DOWN=${DOWN:-0}
@@ -174,5 +204,6 @@ traffic_stats() {
 }
 
 # 运行统计
-check_and_clean_process  # 添加此行来确保脚本只运行一个实例
+check_required_commands  # 添加命令检查
+check_and_clean_process  # 确保脚本只运行一个实例
 traffic_stats

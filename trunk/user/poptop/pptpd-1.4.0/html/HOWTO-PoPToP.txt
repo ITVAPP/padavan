@@ -229,16 +229,16 @@ employ a new firewall called ipchains.  This tool willl handle arbitrary
 protocols, which can be specified by their numbers.
 
 
-  192.168.2.142                                    192.168.56.11
+  192.168.168.142                                    192.168.56.11
    _____                   ______                   ______
   |     |                 | fire | 192.168.56.1    | file |
   | win | --------------->| wall | --------------> | srvr |
-  |_____|     192.168.2.1 |______|                 |______|
+  |_____|     192.168.168.1 |______|                 |______|
 
 
 
 You need to remember a few things before getting too deep into this.
-The default gateway on win is set to 192.168.2.1, and the default
+The default gateway on win is set to 192.168.168.1, and the default
 gateway on file srvr is set to 192.168.56.1.  The firewall has the two
 network interfaces spanning the two subnets and is configured for
 IP forwarding.  If you have not yet applied any firewall rules, this
@@ -316,10 +316,10 @@ NAT rules so that the incoming client thinks its talking to the
 firewall, as does the outgoing file server.  The short of it is:
 
 ipnatadm -F
-ipnatadm -I -i -P 6 -D 192.168.2.1 1723 -N 192.168.56.11 1723
-ipnatadm -O -i -P 6 -S 192.168.56.11 1723 -M 192.168.2.1 1723
-ipnatadm -I -i -P 47 -D 192.168.2.1 -N 192.168.56.11
-ipnatadm -O -i -P 47 -S 192.168.56.11 -M 192.168.2.1
+ipnatadm -I -i -P 6 -D 192.168.168.1 1723 -N 192.168.56.11 1723
+ipnatadm -O -i -P 6 -S 192.168.56.11 1723 -M 192.168.168.1 1723
+ipnatadm -I -i -P 47 -D 192.168.168.1 -N 192.168.56.11
+ipnatadm -O -i -P 47 -S 192.168.56.11 -M 192.168.168.1
 
 
 Here, the -P argument sets the protocol, 6 is tcp and 47 is GRE.

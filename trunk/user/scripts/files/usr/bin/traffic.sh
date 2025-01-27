@@ -11,12 +11,13 @@ GREP=$(which grep 2>/dev/null)
 AWK=$(which awk 2>/dev/null)
 KILL=$(which kill 2>/dev/null)
 SLEEP=$(which sleep 2>/dev/null)
-IPTABLES_PATH=$(which iptables 2>/dev/null)
+IPTABLES=$(which iptables 2>/dev/null)
 HEAD=$(which head 2>/dev/null)
 TAIL=$(which tail 2>/dev/null)
 DATE=$(which date 2>/dev/null)
 BASENAME=$(which basename 2>/dev/null)
 CUT=$(which cut 2>/dev/null)
+ARP=$(which arp 2>/dev/null)
 
 # 缓存数据以减少命令调用
 ARP_CACHE=""
@@ -24,14 +25,22 @@ STATS_CACHE=""
 
 # 检查必需命令
 check_required_commands() {
-    if [ -z "$IPTABLES_PATH" ]; then
-        echo "错误: 未找到 iptables 命令"
-        exit 1
-    fi
-    if [ -z "$GREP" ] || [ -z "$AWK" ]; then
-        echo "错误: 基本文本处理命令缺失"
-        exit 1
-    fi
+    has_error=0
+    
+    # 检查所有必要的命令
+    for cmd in iptables ps grep awk cut kill sleep head tail basename date arp; do
+        cmd_var=$(eval echo \$$(echo $cmd | tr 'a-z' 'A-Z'))
+        if [ -z "$cmd_var" ]; then
+            echo "错误: 未找到必要的命令: $cmd"
+            has_error=1
+        else
+            echo "信息: 找到命令 $cmd: $cmd_var"
+        fi
+    done
+    
+    [ $has_error -eq 1 ] && exit 1
+    echo "信息: 所有必需命令检查通过"
+    return 0
 }
 
 # 检查目录
@@ -158,14 +167,14 @@ create_json_end() {
 # 创建流量统计函数
 traffic_stats() {
   # 检查STATS链是否存在，不存在则创建
-  $IPTABLES_PATH -L STATS >/dev/null 2>&1 || {
-      $IPTABLES_PATH -N STATS
-      $IPTABLES_PATH -I FORWARD -j STATS
+  $IPTABLES -L STATS >/dev/null 2>&1 || {
+      $IPTABLES -N STATS
+      $IPTABLES -I FORWARD -j STATS
   }
   
   # 先获取缓存数据
-  ARP_CACHE=$(arp -n)
-  STATS_CACHE=$($IPTABLES_PATH -L STATS -nvx)
+  ARP_CACHE=$($ARP -n)
+  STATS_CACHE=$($IPTABLES -L STATS -nvx)
   
   # 开始创建JSON
   create_json_start
@@ -173,16 +182,16 @@ traffic_stats() {
   TOTAL_UP=0
   TOTAL_DOWN=0
   FIRST=1
-  
+
   # 从ARP缓存中获取IP列表
-  for ip in $(echo "$ARP_CACHE" | $AWK '/[[:space:]]ether[[:space:]]/ {print $1}')
+  for ip in $(echo "$ARP_CACHE" | $GREP -v incomplete | $GREP "\[ether\]" 2>/dev/null | $GREP -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
   do
       # 检查IP是否已有规则，没有则添加
       echo "$STATS_CACHE" | $GREP -q $ip || {
-          $IPTABLES_PATH -A STATS -s $ip
-          $IPTABLES_PATH -A STATS -d $ip
+          $IPTABLES -A STATS -s $ip
+          $IPTABLES -A STATS -d $ip
           # 更新缓存
-          STATS_CACHE=$($IPTABLES_PATH -L STATS -nvx)
+          STATS_CACHE=$($IPTABLES -L STATS -nvx)
       }
       
       # 从缓存中获取流量数据

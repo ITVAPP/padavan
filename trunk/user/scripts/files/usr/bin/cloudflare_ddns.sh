@@ -72,8 +72,8 @@ handle_error() {
 check_system_environment() {
     has_error=0
     
-    # 检查必要的命令
-    for cmd in curl grep awk sed date; do
+    # 检查所有必要的命令
+    for cmd in curl grep awk sed date ps kill sleep touch mkdir ping head cut cat wc basename; do
         cmd_var=$(eval echo \$$(echo $cmd | tr 'a-z' 'A-Z'))
         if [ -z "$cmd_var" ]; then
             log_message "错误" "未找到必要的命令: $cmd"

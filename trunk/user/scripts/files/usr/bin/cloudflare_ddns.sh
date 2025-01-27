@@ -8,13 +8,23 @@ E_API=3
 E_PARAM=4
 E_SYSTEM=5
 
-# 动态获取所需命令（添加）
+# 动态获取所需命令
 CURL=$(which curl 2>/dev/null)
 GREP=$(which grep 2>/dev/null)
 AWK=$(which awk 2>/dev/null)
 SED=$(which sed 2>/dev/null)
 DATE=$(which date 2>/dev/null)
 PS=$(which ps 2>/dev/null)
+KILL=$(which kill 2>/dev/null) 
+SLEEP=$(which sleep 2>/dev/null) 
+TOUCH=$(which touch 2>/dev/null) 
+MKDIR=$(which mkdir 2>/dev/null)  
+PING=$(which ping 2>/dev/null)
+HEAD=$(which head 2>/dev/null)
+CUT=$(which cut 2>/dev/null)
+CAT=$(which cat 2>/dev/null)
+WC=$(which wc 2>/dev/null)
+BASENAME=$(which basename 2>/dev/null)
 
 # 通用错误处理函数
 handle_error() {

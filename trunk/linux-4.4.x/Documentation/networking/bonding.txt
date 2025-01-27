@@ -1519,8 +1519,8 @@ your init script:
 modprobe e1000
 echo +bond1 > /sys/class/net/bonding_masters
 echo active-backup > /sys/class/net/bond1/bonding/mode
-ifconfig bond1 192.168.2.1 netmask 255.255.255.0 up
-echo +192.168.2.100 /sys/class/net/bond1/bonding/arp_ip_target
+ifconfig bond1 192.168.168.1 netmask 255.255.255.0 up
+echo +192.168.168.100 /sys/class/net/bond1/bonding/arp_ip_target
 echo 2000 > /sys/class/net/bond1/bonding/arp_interval
 echo +eth2 > /sys/class/net/bond1/bonding/slaves
 echo +eth3 > /sys/class/net/bond1/bonding/slaves

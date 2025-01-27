@@ -879,7 +879,7 @@ ipset create foo hash:ip,port,net
 .IP 
 ipset add foo 192.168.1,80,10.0.0/24
 .IP 
-ipset add foo 192.168.2,25,10.1.0.0/16
+ipset add foo 192.168.168,25,10.1.0.0/16
 .IP 
 ipset test foo 192.168.1,80.10.0.0/24
 .SS hash:ip,mark
@@ -963,7 +963,7 @@ ipset create foo hash:net,port,net
 .IP 
 ipset add foo 192.168.1.0/24,0,10.0.0/24
 .IP 
-ipset add foo 192.168.2.0/24,25,10.1.0.0/16
+ipset add foo 192.168.168.0/24,25,10.1.0.0/16
 .IP 
 ipset test foo 192.168.1.1,80,10.0.0.1
 .SS hash:net,iface

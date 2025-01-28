@@ -477,18 +477,25 @@ EOF
 
 ### 启用并发 DNS 查询，提升查询效率
 all-servers
-# 限制 DNS 转发的并发数量
-dns-forward-max=518
+
+### 限制 DNS 转发的并发数量
+dns-forward-max=888
+
 ### 设置 DNS 缓存大小
-cache-size=1888
+min-cache-ttl=888
+
 ### 不转发没有域名部分的查询请求
 domain-needed
+
 ### 阻止私有地址范围的查询转发
 bogus-priv
+
 ### 禁用 /etc/resolv.conf 中的上游 DNS，仅使用此配置
 no-resolv
+
 ### Web Proxy 自动发现 (WPAD)
 dhcp-option=252,"\n"
+
 ### 本地域名解析，仅从 hosts 或 DHCP 查询
 local=/router/localdomain/
 
@@ -512,7 +519,6 @@ EOF
 	if [ -d $dir_gfwlist ]; then
 		cat >> "$user_dnsmasq_conf" <<EOF
 ### gfwlist related (resolve by port 5353)
-#min-cache-ttl=3600
 #conf-dir=/etc/storage/gfwlist
 
 EOF

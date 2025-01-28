@@ -252,17 +252,6 @@ func_fill()
 		cat > "$script_started" <<EOF
 #!/bin/sh
 
-### Custom user script
-### Called after router started and network is ready
-
-### Example - load ipset modules
-#modprobe ip_set
-#modprobe ip_set_hash_ip
-#modprobe ip_set_hash_net
-#modprobe ip_set_bitmap_ip
-#modprobe ip_set_list_set
-#modprobe xt_set
-
 # CPU多核利用率优化
 /usr/bin/rps-rfs-ops.sh set
 
@@ -315,7 +304,6 @@ EOF
 #!/bin/sh
 
 ### Custom user script
-### Called before router shutdown
 ### \$1 - action (0: reboot, 1: halt, 2: power-off)
 
 EOF
@@ -326,11 +314,6 @@ EOF
 	if [ ! -f "$script_postf" ] ; then
 		cat > "$script_postf" <<EOF
 #!/bin/sh
-
-### Custom user script
-### Called after internal iptables reconfig (firewall update)
-
-#wing resume
 
 # 解决 PMTU 黑洞
 iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
@@ -352,15 +335,6 @@ EOF
 		cat > "$script_postw" <<EOF
 #!/bin/sh
 
-### Custom user script
-### Called after internal WAN up/down action
-### \$1 - WAN action (up/down)
-### \$2 - WAN interface name (e.g. eth3 or ppp0)
-### \$3 - WAN IPv4 address
-
-### Solution for UPnP working in case no delicated (no WHITE) external IP adress
-#echo "ext_ip=1.1.1.1" >> /etc/miniupnpd.conf && killall miniupnpd && miniupnpd -f /etc/miniupnpd.conf
-
 # 启用 cloudflare ddns 更新IP解析， 使用 API Token 方式 或 使用 Email + API Key 方式
 # nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com xxxxxxxxxxxxxxxx
 # nice -n 18 /usr/bin/cloudflare_ddns.sh abc.aa.com '' user@example.com xxxxxxxxxxxxxxxx
@@ -373,11 +347,6 @@ EOF
 	if [ ! -f "$script_inets" ] ; then
 		cat > "$script_inets" <<EOF
 #!/bin/sh
-
-### Custom user script
-### Called on Internet status changed
-### \$1 - Internet status (0/1)
-### \$2 - elapsed time (s) from previous state
 
 logger -t "di" "Internet state: \$1, elapsed time: \$2s."
 
@@ -398,12 +367,6 @@ EOF
 #!/bin/sh
 
 ### Custom user script
-### Called after remote peer connected/disconnected to internal VPN server
-### \$1 - peer action (up/down)
-### \$2 - peer interface name (e.g. ppp10)
-### \$3 - peer local IP address
-### \$4 - peer remote IP address
-### \$5 - peer name
 
 peer_if="\$2"
 peer_ip="\$4"
@@ -450,16 +413,9 @@ EOF
 #!/bin/sh
 
 ### Custom user script
-### Called after internal VPN client connected/disconnected to remote VPN server
-### \$1        - action (up/down)
-### \$IFNAME   - tunnel interface name (e.g. ppp5 or tun0)
-### \$IPLOCAL  - tunnel local IP address
-### \$IPREMOTE - tunnel remote IP address
-### \$DNS1     - peer DNS1
-### \$DNS2     - peer DNS2
 
 # private LAN subnet behind a remote server (example)
-peer_lan="192.168.9.0"
+peer_lan="192.168.168.0"
 peer_msk="255.255.255.0"
 
 ### example: add static route to private LAN subnet behind a remote server
@@ -506,50 +462,35 @@ EOF
 		chmod 755 "$script_ezbtn"
 	fi
 
-	# create user dnsmasq.conf
+	# 创建用户 dnsmasq 配置目录
 	[ ! -d "$dir_dnsmasq" ] && mkdir -p -m 755 "$dir_dnsmasq"
+
+	# 如果 dnsmasq.conf 或 hosts 存在于存储目录，则移动到 dnsmasq 目录
 	for i in dnsmasq.conf hosts ; do
 		[ -f "$dir_storage/$i" ] && mv -n "$dir_storage/$i" "$dir_dnsmasq"
 	done
+
+	# 如果用户自定义的 dnsmasq 配置文件不存在，则创建它
 	if [ ! -f "$user_dnsmasq_conf" ] ; then
 		cat > "$user_dnsmasq_conf" <<EOF
-# Custom user conf file for dnsmasq
-# Please add needed params only!
+# 自定义 dnsmasq 配置文件
 
-### Web Proxy Automatic Discovery (WPAD)
-dhcp-option=252,"\n"
-
-### Set the limit on DHCP leases, the default is 150
-#dhcp-lease-max=150
-
-### Add local-only domains, queries are answered from hosts or DHCP only
-#local=/router/localdomain/
-
-### Examples:
-
-### Enable built-in TFTP server
-#enable-tftp
-
-### Set the root directory for files available via TFTP.
-#tftp-root=/opt/srv/tftp
-
-### Make the TFTP server more secure
-#tftp-secure
-
-### Set the boot filename for netboot/PXE
-#dhcp-boot=pxelinux.0
-
-### Log for all queries
-#log-queries
-
-### Keep DHCP host name valid at any times
-#dhcp-to-host
-
-### Do NOT forward queries with no domain part
-domain-needed
-
-# 启用并发查询DNS
+### 启用并发 DNS 查询，提升查询效率
 all-servers
+# 限制 DNS 转发的并发数量
+dns-forward-max=168
+### 设置 DNS 缓存大小
+cache-size=888
+### 不转发没有域名部分的查询请求
+domain-needed
+### 阻止私有地址范围的查询转发
+bogus-priv
+### 禁用 /etc/resolv.conf 中的上游 DNS，仅使用此配置
+no-resolv
+### Web Proxy 自动发现 (WPAD)
+dhcp-option=252,"\n"
+### 本地域名解析，仅从 hosts 或 DHCP 查询
+local=/router/localdomain/
 
 EOF
 	if [ -f /usr/bin/vlmcsd ]; then
@@ -583,7 +524,6 @@ EOF
 	if [ ! -f "$user_dnsmasq_servers" ] ; then
 		cat > "$user_dnsmasq_servers" <<EOF
 # Custom user servers file for dnsmasq
-# Example:
 #server=/mit.ru/izmuroma.ru/10.25.11.30
 
 # IPv4 DNS服务器
@@ -620,16 +560,9 @@ EOF
 	if [ ! -f "$user_inadyn_conf" ] ; then
 		cat > "$user_inadyn_conf" <<EOF
 # Custom user conf file for inadyn DDNS client
-# Please add only new custom system!
 
 ### Example for twoDNS.de:
 #system custom@http_srv_basic_auth
-#  checkip-url checkip.two-dns.de /
-#  server-name update.twodns.de
-#  server-url /update\?hostname=
-#  username account
-#  password secret
-#  alias example.dd-dns.de
 
 EOF
 		chmod 644 "$user_inadyn_conf"
@@ -675,7 +608,6 @@ EOF
 		if [ ! -f "$user_ovpnsvr_conf" ] ; then
 			cat > "$user_ovpnsvr_conf" <<EOF
 # Custom user conf file for OpenVPN server
-# Please add needed params only!
 
 ### Max clients limit
 max-clients 10
@@ -707,7 +639,6 @@ EOF
 		if [ ! -f "$user_ovpncli_conf" ] ; then
 			cat > "$user_ovpncli_conf" <<EOF
 # Custom user conf file for OpenVPN client
-# Please add needed params only!
 
 ### If your server certificates with the nsCertType field set to "server"
 remote-cert-tls server

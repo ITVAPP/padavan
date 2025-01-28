@@ -1,14 +1,5 @@
 #!/bin/sh
-#
-# Copyright (C) 2017 openwrt-ssr
-# Copyright (C) 2017 yushi studio <ywb94@qq.com>
-# Copyright (C) 2019 chongshengB
-# Copyright (c) 2023 simonchen
-#
-# This is free software, licensed under the GNU General Public License v3.
-# See /LICENSE for more information.
-#
-# Fix rule to not be removed, $TAG has wrongly added underscore(_) at beginning of $TAG
+
 modprobe xt_TPROXY
 modprobe xt_set
 TAG="SS_SPEC_"   # comment tag
@@ -85,75 +76,79 @@ flush_r() {
 }
 
 ipset_r() {
-	mkdir -p /tmp/dnsmasq.dom
-	ipset -N china hash:net 2>/dev/null
-	ipset -N gmlan hash:net 2>/dev/null
-	ipset -N gfwlist hash:net 2>/dev/null
-	for ip in $LAN_GM_IP; do ipset -! add gmlan $ip; done
-	$ipt_n -N SS_SPEC_WAN_AC
-	$ipt_n -I SS_SPEC_WAN_AC -p tcp ! --dport 53 -d $server -j RETURN
-	if [ "$RUNMODE" = "router" ] ;then
-	ipset -! -R <<-EOF || return 1
-		create ss_spec_wan_ac hash:net
-		$(gen_iplist | sed -e "s/^/add ss_spec_wan_ac /")
-EOF
-	ipset -N china hash:net 2>/dev/null
-	# [2023-2-17] by simonchen
-	# 运行在router模式下也创建ipset:gfwlist
-	# 目的是将dnsmasq.dom/gfwlist_list.conf中查询出的ip加入，应用到iptables规则中
-	ipset -N gfwlist hash:net 2>/dev/null
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set ss_spec_wan_ac dst -j RETURN
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j RETURN
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gfwlist dst -j SS_SPEC_WAN_FW # [2023-2-17] by simonchen (see below)
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
-	$ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
-	if [ ! -f "/etc/storage/gfwlist/gfwlist_list.conf" ] ; then
-	mkdir -p /etc/storage/gfwlist
-	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_list.conf
-	fi
-	if [ ! -f "/tmp/dnsmasq.dom/gfwlist_list.conf" ] ; then
-	lua /etc_ro/ss/gfwcreate.lua
-	fi
-	elif [ "$RUNMODE" = "gfw" ] ;then
-	ipset -N gfwlist hash:net 2>/dev/null
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j RETURN
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gfwlist dst -j SS_SPEC_WAN_FW
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
-	$ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW # gfwlist ipset几乎没有，必须加！[simonchen]
-	if [ ! -f "/etc/storage/gfwlist/gfwlist_list.conf" ] ; then
-	mkdir -p /etc/storage/gfwlist
-	cp -rf /etc_ro/gfwlist_list.conf /etc/storage/gfwlist/gfwlist_list.conf
-	fi
-	if [ ! -f "/tmp/dnsmasq.dom/gfwlist_list.conf" ] ; then
-	lua /etc_ro/ss/gfwcreate.lua
-	fi
-	elif [ "$RUNMODE" = "oversea" ] ;then
-	ipset -N oversea hash:net 2>/dev/null
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set oversea dst -j SS_SPEC_WAN_FW
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -j SS_SPEC_WAN_FW
-	$ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j SS_SPEC_WAN_FW
-	elif [ "$RUNMODE" = "all" ] ;then
-	$ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
-	fi
-	# commented by simonchen
-	# 下面是自定义ip规则白名单和黑名单
-	$ipt_n -I PREROUTING $SSNU -m comment --comment "$TAG" -j SS_SPEC_WAN_AC
-	ipset -N whitelist hash:net 2>/dev/null
-	ipset -N blacklist hash:net 2>/dev/null
-	cat /etc/storage/ss_dom.sh | grep -v '^!' | grep -v "^$" | awk '{printf("server=/%s/127.0.0.1#5353\nipset=/%s/blacklist\n", $1, $1 )}' > /tmp/dnsmasq.dom/ss_dom.conf
-	cat /etc/storage/uss_dom.sh | grep -v '^!' | grep -v "^$" | awk '{printf("ipset=/%s/whitelist\n", $1 )}' > /tmp/dnsmasq.dom/uss_dom.conf
-	$ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set blacklist dst -j SS_SPEC_WAN_FW
-	$ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set whitelist dst -j RETURN
+    # 创建必要目录
+    mkdir -p /tmp/dnsmasq.dom
 
-	for ip in $WAN_BP_IP; do ipset -! add whitelist $ip; done
-	for ip in $WAN_FW_IP; do ipset -! add blacklist $ip; done
-	
-	sed -i '/dnsmasq.dom/d' /etc/storage/dnsmasq/dnsmasq.conf
-cat >> /etc/storage/dnsmasq/dnsmasq.conf << EOF
-conf-dir=/tmp/dnsmasq.dom/
+    # 初始化 ipset 集并检查结果
+    ipset -N china hash:net 2>/dev/null || debug "创建 ipset 集 china 失败"
+    ipset -N gmlan hash:net 2>/dev/null || debug "创建 ipset 集 gmlan 失败"
+    ipset -N gfwlist hash:net 2>/dev/null || debug "创建 ipset 集 gfwlist 失败"
+
+    # 添加 LAN 游戏模式 IP 到 gmlan 集
+    for ip in $LAN_GM_IP; do
+        if echo "$ip" | grep -Eq "^([0-9]{1,3}\.){3}[0-9]{1,3}$"; then
+            ipset -! add gmlan $ip || debug "无法添加 $ip 到 gmlan"
+        else
+            debug "跳过无效 IP: $ip"
+        fi
+    done
+
+    # 确保规则链存在，避免重复创建或报错
+    $ipt_n -N SS_SPEC_WAN_AC 2>/dev/null || debug "创建规则链 SS_SPEC_WAN_AC 失败"
+    $ipt_n -I SS_SPEC_WAN_AC -p tcp ! --dport 53 -d "$server" -j RETURN
+
+    # 根据运行模式配置规则
+    if [ "$RUNMODE" = "router" ]; then
+        ipset -! -R <<-EOF || return 1
+            create ss_spec_wan_ac hash:net
+            $(gen_iplist | sed -e "s/^/add ss_spec_wan_ac /")
+        EOF
+        ipset -N china hash:net 2>/dev/null || debug "重新创建 china 集失败"
+        ipset -N gfwlist hash:net 2>/dev/null || debug "重新创建 gfwlist 集失败"
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set ss_spec_wan_ac dst -j RETURN
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j RETURN
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set gfwlist dst -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
+    elif [ "$RUNMODE" = "gfw" ]; then
+        ipset -N gfwlist hash:net 2>/dev/null || debug "创建 gfwlist 失败"
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j RETURN
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set gfwlist dst -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -m set ! --match-set china dst -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
+    elif [ "$RUNMODE" = "oversea" ]; then
+        ipset -N oversea hash:net 2>/dev/null || debug "创建 oversea 失败"
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set oversea dst -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set gmlan src -j SS_SPEC_WAN_FW
+        $ipt_n -A SS_SPEC_WAN_AC -m set --match-set china dst -j SS_SPEC_WAN_FW
+    elif [ "$RUNMODE" = "all" ]; then
+        $ipt_n -A SS_SPEC_WAN_AC -j SS_SPEC_WAN_FW
+    fi
+
+    # 自定义白名单和黑名单规则
+    $ipt_n -I PREROUTING $SSNU -m comment --comment "$TAG" -j SS_SPEC_WAN_AC
+    ipset -N whitelist hash:net 2>/dev/null || debug "创建 whitelist 失败"
+    ipset -N blacklist hash:net 2>/dev/null || debug "创建 blacklist 失败"
+    grep -v '^!' /etc/storage/ss_dom.sh | grep -v "^$" | awk '{printf("server=/%s/127.0.0.1#5353\nipset=/%s/blacklist\n", $1, $1 )}' > /tmp/dnsmasq.dom/ss_dom.conf
+    grep -v '^!' /etc/storage/uss_dom.sh | grep -v "^$" | awk '{printf("ipset=/%s/whitelist\n", $1 )}' > /tmp/dnsmasq.dom/uss_dom.conf
+    $ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set blacklist dst -j SS_SPEC_WAN_FW
+    $ipt_n -I SS_SPEC_WAN_AC 2 -m set --match-set whitelist dst -j RETURN
+
+    # 添加自定义 IP 到白名单和黑名单
+    for ip in $WAN_BP_IP; do
+        ipset -! add whitelist $ip || debug "无法添加 $ip 到 whitelist"
+    done
+    for ip in $WAN_FW_IP; do
+        ipset -! add blacklist $ip || debug "无法添加 $ip 到 blacklist"
+    done
+
+    # 更新 dnsmasq 配置
+    sed -i '/dnsmasq.dom/d' /etc/storage/dnsmasq/dnsmasq.conf
+    cat >> /etc/storage/dnsmasq/dnsmasq.conf <<-EOF
+    conf-dir=/tmp/dnsmasq.dom/
 EOF
 
-	return $?
+    return $?
 }
 
 fw_rule() {
@@ -262,55 +257,58 @@ tp_rule() {
 }
 
 get_wan_ip() {
-	cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}"
-		$server
-		$SERVER
-		$WAN_BP_IP
+    # 过滤并仅输出合法的 IPv4 地址
+    cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+        $server
+        $SERVER
+        $WAN_BP_IP
 EOF
 }
 
 gen_iplist() {
-	cat <<-EOF
-		0.0.0.0/8
-		10.0.0.0/8
-		100.64.0.0/10
-		127.0.0.0/8
-		169.254.0.0/16
-		172.16.0.0/12
-		192.0.0.0/24
-		192.0.2.0/24
-		192.88.99.0/24
-		192.168.0.0/16
-		198.18.0.0/15
-		198.51.100.0/24
-		203.0.113.0/24
-		224.0.0.0/4
-		240.0.0.0/4
-		255.255.255.255
-		$(get_wan_ip)
-		$(cat ${IGNORE_LIST:=/dev/null} 2>/dev/null)
+    # 生成 IPv4 地址和合法子网掩码的列表
+    cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[12][0-9]|3[0-2]))?$"
+        0.0.0.0/8
+        10.0.0.0/8
+        100.64.0.0/10
+        127.0.0.0/8
+        169.254.0.0/16
+        172.16.0.0/12
+        192.0.0.0/24
+        192.0.2.0/24
+        192.88.99.0/24
+        192.168.0.0/16
+        198.18.0.0/15
+        198.51.100.0/24
+        203.0.113.0/24
+        224.0.0.0/4
+        240.0.0.0/4
+        255.255.255.255
+        $(get_wan_ip)
+        $(cat ${IGNORE_LIST:=/dev/null} 2>/dev/null)
 EOF
 }
 
 gen_spec_iplist() {
-	cat <<-EOF
-		0.0.0.0/8
-		10.0.0.0/8
-		100.64.0.0/10
-		127.0.0.0/8
-		169.254.0.0/16
-		172.16.0.0/12
-		192.0.0.0/24
-		192.0.2.0/24
-		192.88.99.0/24
-		192.168.0.0/16
-		198.18.0.0/15
-		198.51.100.0/24
-		203.0.113.0/24
-		224.0.0.0/4
-		240.0.0.0/4
-		255.255.255.255
-		$(get_wan_ip)
+    # 生成特定 IPv4 地址的列表
+    cat <<-EOF | grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[12][0-9]|3[0-2]))?$"
+        0.0.0.0/8
+        10.0.0.0/8
+        100.64.0.0/10
+        127.0.0.0/8
+        169.254.0.0/16
+        172.16.0.0/12
+        192.0.0.0/24
+        192.0.2.0/24
+        192.88.99.0/24
+        192.168.0.0/16
+        198.18.0.0/15
+        198.51.100.0/24
+        203.0.113.0/24
+        224.0.0.0/4
+        240.0.0.0/4
+        255.255.255.255
+        $(get_wan_ip)
 EOF
 }
 

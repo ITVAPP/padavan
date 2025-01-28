@@ -46,7 +46,7 @@
 
    function switchPage(id) {
        if (id == "tab_bw_rt")
-           location.href = "/Main_TrafficMonitor.asp";
+           location.href = "/Main_TrafficMonitor_realtime.asp";
        else if (id == "tab_tr_traffic")
            location.href = "/Main_traffic.asp";
        else if (id == "tab_bw_24")

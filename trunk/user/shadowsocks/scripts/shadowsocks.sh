@@ -23,7 +23,7 @@ run_mode=`nvram get ss_run_mode`
 lan_con=`nvram get lan_con`
 GLOBAL_SERVER=`nvram get global_server`
 socks=""
-args=${args:-""}
+args=${args:-""}  # 确保 args 被初始化
 SS_RULES=/usr/bin/ss-rules
 [ -x /etc/storage/ss-rules ] && SS_RULES=/etc/storage/ss-rules
 
@@ -143,86 +143,102 @@ get_arg_out() {
 
 start_rules() {
     log "正在添加防火墙规则..."
-	lua /etc_ro/ss/getconfig.lua $GLOBAL_SERVER > /tmp/server.txt
-	server=`cat /tmp/server.txt`
-	rm -f /tmp/server.txt
-	cat /etc/storage/ss_ip.sh | grep -v '^!' | grep -v "^$" >$wan_fw_ips
-	cat /etc/storage/ss_wan_ip.sh | grep -v '^!' | grep -v "^$" >$wan_bp_ips
-	#resolve name
-	if echo $server | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
-		server=${server}
-	elif [ "$server" != "${server#*:[0-9a-fA-F]}" ]; then
-		server=${server}
-	else
-		server=$(resolveip -4 -t 3 $server | awk 'NR==1{print}')
-		if echo $server | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
-			echo $server >/etc/storage/ssr_ip
-		else
-			server=$(cat /etc/storage/ssr_ip)
-		fi
-	fi
-	local_port="1080"
-	lan_ac_ips=$lan_ac_ips
-	lan_ac_mode="b"
-	#if [ "$GLOBAL_SERVER" == "$UDP_RELAY_SERVER" ]; then
-	#	ARG_UDP="-u"
-	if [ "$UDP_RELAY_SERVER" != "nil" ]; then
-		ARG_UDP="-U"
-		lua /etc_ro/ss/getconfig.lua $UDP_RELAY_SERVER > /tmp/userver.txt
-		udp_server=`cat /tmp/userver.txt`
-		rm -f /tmp/userver.txt
-		udp_local_port="1080"
-	fi
-	if [ -n "$lan_ac_ips" ]; then
-		case "$lan_ac_mode" in
-		w | W | b | B) ac_ips="$lan_ac_mode$lan_ac_ips" ;;
-		esac
-	fi
-	#ac_ips="b"
-	gfwmode=""
-	if [ "$run_mode" = "gfw" ]; then
-		gfwmode="-g"
-	elif [ "$run_mode" = "router" ]; then
-		gfwmode="-r"
-	elif [ "$run_mode" = "oversea" ]; then
-		gfwmode="-c"
-	elif [ "$run_mode" = "all" ]; then
-		gfwmode="-z"
-	fi
-	if [ "$lan_con" = "0" ]; then
-		rm -f $lan_fp_ips
-		lancon="all"
-		lancons="全部IP走代理..."
-		cat /etc/storage/ss_lan_ip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
-	elif [ "$lan_con" = "1" ]; then
-		rm -f $lan_fp_ips
-		lancon="bip"
-		lancons="指定 IP 走代理: 请到规则管理页面添加需要走代理的 IP..."
-		cat /etc/storage/ss_lan_bip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
-	fi
-	rm -f $lan_gm_ips
-	cat /etc/storage/ss_lan_gmip.sh | grep -v '^!' | grep -v "^$" >$lan_gm_ips
-	dports=$(nvram get s_dports)
-	if [ $dports = "0" ]; then
-		proxyport="--syn"
-	else
-		proxyport="-m multiport --dports 22,53,587,465,995,993,143,80,443,3389 --syn"
-	fi
-	$SS_RULES \
-		-s "$server" \
-		-l "$local_port" \
-		-S "$udp_server" \
-		-L "$udp_local_port" \
-		-a "$ac_ips" \
-		-i "" \
-		-b "$wan_bp_ips" \
-		-w "$wan_fw_ips" \
-		-p "$lan_fp_ips" \
-		-G "$lan_gm_ips" \
-		-D "$proxyport" \
-		-k "$lancon" \
-		$(get_arg_out) $gfwmode $ARG_UDP
-	return $?
+
+    # 获取全局服务器地址
+    lua /etc_ro/ss/getconfig.lua $GLOBAL_SERVER > /tmp/server.txt
+    server=$(cat /tmp/server.txt)
+    rm -f /tmp/server.txt
+
+    # 获取防火墙规则的 IP 列表
+    cat /etc/storage/ss_ip.sh | grep -v '^!' | grep -v "^$" >$wan_fw_ips
+    cat /etc/storage/ss_wan_ip.sh | grep -v '^!' | grep -v "^$" >$wan_bp_ips
+
+    # 解析服务器地址
+    if echo "$server" | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
+        server=${server}
+    elif echo "$server" | grep -E "^([a-fA-F0-9:]+)$" >/dev/null; then
+        server=${server}  # IPv6 地址
+    else
+        server=$(resolveip -4 -t 3 "$server" | awk 'NR==1{print}')
+        if ! echo "$server" | grep -E "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" >/dev/null; then
+            log "服务器地址解析失败，使用本地缓存或默认地址 8.8.8.8"
+            server=$(cat /etc/storage/ssr_ip || echo "8.8.8.8")
+        fi
+    fi
+
+    # 设置默认本地端口
+    local_port="1080"
+    udp_local_port="1080"
+    ac_ips=""
+    udp_server=""
+
+    # 判断 UDP 中继服务器是否启用
+    if [ "$UDP_RELAY_SERVER" != "nil" ]; then
+        ARG_UDP="-U"
+        lua /etc_ro/ss/getconfig.lua $UDP_RELAY_SERVER > /tmp/userver.txt
+        udp_server=$(cat /tmp/userver.txt)
+        rm -f /tmp/userver.txt
+    fi
+
+    # 设置内网控制规则
+    if [ -n "$lan_ac_ips" ]; then
+        case "$lan_ac_mode" in
+        w | W | b | B) ac_ips="$lan_ac_mode$lan_ac_ips" ;;
+        esac
+    fi
+
+    # 设置运行模式
+    gfwmode=""
+    case "$run_mode" in
+    gfw) gfwmode="-g" ;;
+    router) gfwmode="-r" ;;
+    oversea) gfwmode="-c" ;;
+    all) gfwmode="-z" ;;
+    esac
+
+    # 设置 LAN IP 策略
+    if [ "$lan_con" = "0" ]; then
+        rm -f $lan_fp_ips
+        lancon="all"
+        lancons="全部IP走代理..."
+        cat /etc/storage/ss_lan_ip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
+    elif [ "$lan_con" = "1" ]; then
+        rm -f $lan_fp_ips
+        lancon="bip"
+        lancons="指定 IP 走代理: 请到规则管理页面添加需要走代理的 IP..."
+        cat /etc/storage/ss_lan_bip.sh | grep -v '^!' | grep -v "^$" >$lan_fp_ips
+    fi
+
+    # 获取 LAN 游戏模式 IP 列表
+    rm -f $lan_gm_ips
+    cat /etc/storage/ss_lan_gmip.sh | grep -v '^!' | grep -v "^$" >$lan_gm_ips
+
+    # 设置代理端口
+    dports=$(nvram get s_dports)
+    if [ "$dports" = "0" ]; then
+        proxyport="--syn"
+    else
+        proxyport="-m multiport --dports 22,53,587,465,995,993,143,80,443,3389 --syn"
+    fi
+
+    # 调用 SS_RULES 添加规则
+    $SS_RULES \
+        -s "$server" \
+        -l "$local_port" \
+        -S "$udp_server" \
+        -L "$udp_local_port" \
+        -a "$ac_ips" \
+        -i "" \
+        -b "$wan_bp_ips" \
+        -w "$wan_fw_ips" \
+        -p "$lan_fp_ips" \
+        -G "$lan_gm_ips" \
+        -D "$proxyport" \
+        -k "$lancon" \
+        $(get_arg_out) $gfwmode $ARG_UDP
+
+    # 返回操作结果
+    return $?
 }
 
 start_redir_tcp() {

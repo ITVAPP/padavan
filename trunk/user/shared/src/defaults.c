@@ -1,20 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA 02111-1307 USA
- */
-
 #include <ralink_boards.h>
 #include "nvram_linux.h"
 #include "netutils.h"
@@ -602,7 +585,7 @@ struct nvram_pair router_defaults[] = {
 	{ "ss_update_chnroute", "0" },
 	{ "ss_chnroute_url", "https://ispip.clang.cn/all_cn.txt"},
 	{ "ss_update_gfwlist", "0" },
-	{ "ss_gfwlist_url", "https://raw.gitmirror.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt"},
+	{ "ss_gfwlist_url", "https://cdn.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt"},
 	{ "ss_type", "0" },
 	{ "backup_server", "nil" },
 	{ "ssp_local_port", "1080" },

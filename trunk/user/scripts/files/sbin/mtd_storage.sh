@@ -478,9 +478,9 @@ EOF
 ### 启用并发 DNS 查询，提升查询效率
 all-servers
 # 限制 DNS 转发的并发数量
-dns-forward-max=168
+dns-forward-max=518
 ### 设置 DNS 缓存大小
-cache-size=888
+cache-size=1888
 ### 不转发没有域名部分的查询请求
 domain-needed
 ### 阻止私有地址范围的查询转发

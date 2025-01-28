@@ -136,9 +136,9 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 			fill_dnsproxy_status(dnsproxy_status());
 			var wan0_dns = '<% nvram_get_x("","wan0_dns"); %>';
 			// use local DNS
-			if (wan0_dns.length > 0){
-					$j("select[name='china_dns']").prepend($j('<option value="'+wan0_dns+'" selected>本地DNS ' + wan0_dns + '</option>'));
-			}
+			//if (wan0_dns.length > 0){
+			//		$j("select[name='china_dns']").prepend($j('<option value="'+wan0_dns+'" selected>本地DNS ' + wan0_dns + '</option>'));
+			//}
 			$("chnroute_count").innerHTML = '<#menu5_17_3#>' + chnroute_count();
 			$("gfwlist_count").innerHTML = '<#menu5_17_3#>' + gfwlist_count();
 			switch_ss_type();
@@ -147,16 +147,16 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 			switch_dns();
 			var o2 = document.form.lan_con;
 			var o3 = document.form.ss_threads;
-			var o4 = document.form.china_dns;
+			//var o4 = document.form.china_dns;
 			var o5 = document.form.pdnsd_enable;
 			//var o6 = document.form.socks5_enable;
-			var o7 = document.form.tunnel_forward;
+			//var o7 = document.form.tunnel_forward;
 			o2.value = '<% nvram_get_x("","lan_con"); %>';
 			o3.value = '<% nvram_get_x("","ss_threads"); %>';
-			o4.value = '<% nvram_get_x("","china_dns"); %>';
+			//o4.value = '<% nvram_get_x("","china_dns"); %>';
 			o5.value = '<% nvram_get_x("","pdnsd_enable"); %>';
 			//o6.value = '<% nvram_get_x("","socks5_enable"); %>';
-			o7.value = '<% nvram_get_x("","tunnel_forward"); %>';
+			//o7.value = '<% nvram_get_x("","tunnel_forward"); %>';
 			switch_dns();
 			if (ss_schedule_support) {
 				document.form.ss_date_x_Sun.checked = getDateCheck(document.form.ss_schedule.value, 0);
@@ -346,13 +346,13 @@ setTimeout('document.getElementById("btn_ctime").style.display="none";',1000);
 		function switch_dns() {
 			var b = document.form.pdnsd_enable.value;
 			if (b == "0" || b == "1") { 
-				showhide_div('row_china_dns', 1);
-				showhide_div('row_tunnel_forward', 1);
+				//showhide_div('row_china_dns', 1);
+				//showhide_div('row_tunnel_forward', 1);
 				showhide_div('row_ssp_dns_ip', 0);
 				showhide_div('row_ssp_dns_port', 0);
 			} else if (b == "2") {
-				showhide_div('row_china_dns', 0);
-				showhide_div('row_tunnel_forward', 0);
+				//showhide_div('row_china_dns', 0);
+				//showhide_div('row_tunnel_forward', 0);
 				showhide_div('row_ssp_dns_ip', 0);
 				showhide_div('row_ssp_dns_port', 0);
 			}

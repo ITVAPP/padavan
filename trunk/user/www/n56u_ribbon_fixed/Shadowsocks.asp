@@ -1723,7 +1723,7 @@ function import_ssr_url(btn, urlname, sid) {
 														</td>
 													</tr>
 													<tr id="row_pdnsd_enable">
-														<th width="50%">DNS代理解析方式：(推荐dnsproxy)</th>
+														<th width="50%">DNS代理解析方式：</th>
 														<td>
 															<select name="pdnsd_enable" id="pdnsd_enable" class="input" style="width: 200px;" onchange="switch_dns()">
 																<option value="0">使用dnsproxy查询</option>

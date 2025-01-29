@@ -16,7 +16,7 @@ endef
 
 define Build/Compile
 	(cd $(PKG_BUILD_DIR); \
-		sed -i "s/go 1.21.4/go 1.23.0/g" ./go.mod; \
+		sed -i "s/go 1.21.4/go 1.23.5/g" ./go.mod; \
 		GOOS=linux GOARCH=mipsle CGO_ENABLED=0 \
 		go build -v -o xray \
 		-trimpath -ldflags "-s -w -buildid=" \

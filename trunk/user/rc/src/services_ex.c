@@ -491,12 +491,13 @@ start_dns_dhcpd(int is_ap_mode)
 			/* DNS server */
 			memset(dnsv6, 0, sizeof(dnsv6));
 			dns6 = nvram_safe_get("dhcp_dnsv6_x");
-			if (is_valid_ipv6(dns6))
+			if (is_valid_ipv6(dns6)) {
 				strcpy(dnsv6, dns6);
-			else
-				strcpy(dnsv6, "[::]");
-
-			fprintf(fp, "dhcp-option=tag:%s,option6:%d,%s\n", DHCPD_RANGE_DEF_TAG, 23, dnsv6);
+				fprintf(fp, "dhcp-option=tag:%s,option6:%d,%s\n", DHCPD_RANGE_DEF_TAG, 23, dnsv6);
+			} else {
+				// strcpy(dnsv6, "[::]");
+				fprintf(fp, "dhcp-option=tag:%s,option6:%d\n", DHCPD_RANGE_DEF_TAG, 23);
+			}
 			
 			/* DOMAIN search */
 			if (strlen(domain) > 0)

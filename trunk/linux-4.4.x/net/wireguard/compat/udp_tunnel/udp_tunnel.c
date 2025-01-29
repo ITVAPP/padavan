@@ -38,10 +38,9 @@ int udp_sock_create4(struct net *net, struct udp_port_cfg *cfg,
 	struct socket *sock = NULL;
 	struct sockaddr_in udp_addr;
 
-	err = sock_create_kern(AF_INET, SOCK_DGRAM, 0, &sock);
+	err = __sock_create(net, AF_INET, SOCK_DGRAM, 0, &sock, 1);
 	if (err < 0)
 		goto error;
-	sk_change_net(sock->sk, net);
 
 	udp_addr.sin_family = AF_INET;
 	udp_addr.sin_addr = cfg->local_ip;
@@ -73,7 +72,7 @@ int udp_sock_create4(struct net *net, struct udp_port_cfg *cfg,
 error:
 	if (sock) {
 		kernel_sock_shutdown(sock, SHUT_RDWR);
-		sk_release_kernel(sock->sk);
+		sock_release(sock);
 	}
 	*sockp = NULL;
 	return err;
@@ -164,7 +163,7 @@ static void __compat_iptunnel_xmit(struct rtable *rt, struct sk_buff *skb,
 	iph->daddr	=	dst;
 	iph->saddr	=	src;
 	iph->ttl	=	ttl;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 53)) && !defined(ISPADAVAN)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 53)
 	__ip_select_ident(iph, &rt->dst, (skb_shinfo(skb)->gso_segs ?: 1) - 1);
 #else
 	__ip_select_ident(iph, skb_shinfo(skb)->gso_segs ?: 1);
@@ -230,7 +229,7 @@ void udp_tunnel_sock_release(struct socket *sock)
 {
 	rcu_assign_sk_user_data(sock->sk, NULL);
 	kernel_sock_shutdown(sock, SHUT_RDWR);
-	sk_release_kernel(sock->sk);
+	sock_release(sock);
 }
 
 #if IS_ENABLED(CONFIG_IPV6)
@@ -255,10 +254,9 @@ int udp_sock_create6(struct net *net, struct udp_port_cfg *cfg,
 	int err;
 	struct socket *sock = NULL;
 
-	err = sock_create_kern(AF_INET6, SOCK_DGRAM, 0, &sock);
+	err = __sock_create(net, AF_INET6, SOCK_DGRAM, 0, &sock, 1);
 	if (err < 0)
 		goto error;
-	sk_change_net(sock->sk, net);
 
 	if (cfg->ipv6_v6only) {
 		int val = 1;
@@ -303,7 +301,7 @@ int udp_sock_create6(struct net *net, struct udp_port_cfg *cfg,
 error:
 	if (sock) {
 		kernel_sock_shutdown(sock, SHUT_RDWR);
-		sk_release_kernel(sock->sk);
+		sock_release(sock);
 	}
 	*sockp = NULL;
 	return err;

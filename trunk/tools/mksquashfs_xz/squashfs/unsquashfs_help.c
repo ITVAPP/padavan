@@ -78,11 +78,12 @@ static char *sqfscat_args[]={
 
 static char *unsquashfs_sections[]={
 	"extraction", "information", "xattrs", "runtime", "help", "misc",
-	"environment", "exit", "extra", NULL
+	"environment", "exit", "extra", "decompressors", NULL
 };
 
 static char *sqfscat_sections[]={
-	"runtime", "filter", "help", "environment", "exit", "extra", NULL
+	"runtime", "filter", "help", "environment", "exit", "extra",
+	"decompressors", NULL
 };
 
 static char *unsquashfs_text[]={
@@ -214,7 +215,8 @@ static char *unsquashfs_text[]={
 			"squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL
 };
 
 
@@ -270,7 +272,8 @@ static char *sqfscat_text[]={
 		"squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL,
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL,
 };
 
 
@@ -295,10 +298,6 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
-
-	autowrap_print(pager, "\nDecompressors available:\n", cols);
-
-	display_compressors(pager, "", "");
 
 	if(tty) {
 		fclose(pager);
@@ -426,9 +425,9 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stderr, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
@@ -440,9 +439,9 @@ static void print_help(char *prog_name, int error, char *syntax, char **sections
 	int cols = get_column_width();
 
 	autowrap_printf(stream, cols, syntax, prog_name);
-	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stream, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t", cols, sections, options_text);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
 }
@@ -453,9 +452,9 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
@@ -530,4 +529,11 @@ void sqfscat_invalid_option(char *opt_name)
 void sqfscat_option_help(char *option)
 {
 	print_option_help("sqfscat", option, sqfscat_sections, sqfscat_text);
+}
+
+
+void display_compressors() {
+	int cols = get_column_width();
+
+	autowrap_print(stderr, "\t" DECOMPRESSORS "\n", cols);
 }

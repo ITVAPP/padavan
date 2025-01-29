@@ -151,7 +151,7 @@ REPRODUCIBLE_DEFAULT = 1
 # Change next variable to "y" to use the pre-built manpages by default,
 # and not attempt to generate "custom" manpages.  This will eliminate
 # errors and warnings at install time.
-USE_PREBUILT_MANPAGES=n
+USE_PREBUILT_MANPAGES = n
 
 ###############################################
 #              INSTALL PATHS                  #
@@ -202,7 +202,7 @@ XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
 REPRODUCIBLE_DEFAULT ?= 1
-USE_PREBUILT_MANPAGES ?= 1
+USE_PREBUILT_MANPAGES ?= n
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
@@ -222,7 +222,7 @@ INCLUDEDIR = -I.
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o
+	print_pager.o symbolic_mode.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -388,7 +388,7 @@ $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 endif
 
 space := $(subst ,, )
-CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
+#CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
 
 #
 # Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
@@ -430,7 +430,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
-	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
+	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h
 
 reader.o: squashfs_fs.h mksquashfs.h caches-queues-lists.h progressbar.h \
 	mksquashfs_error.h pseudo.h sort.h
@@ -475,6 +475,8 @@ date.o: date.h error.h
 
 memory.o: error.h memory_compat.h memory.h
 
+symbolic_mode.o: symbolic_mode.h symbolic_mode.c
+
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
 lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
@@ -489,11 +491,13 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
 
-mksquashfs_help.o: mksquashfs_help.h Makefile
+mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
 
 print_pager.o: print_pager.c print_pager.h
 
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@

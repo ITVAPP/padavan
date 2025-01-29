@@ -76,6 +76,7 @@
 #include "memory.h"
 #include "mksquashfs_help.h"
 #include "print_pager.h"
+#include "symbolic_mode.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -103,7 +104,7 @@ int sparse_files = TRUE;
 
 /* Options which override root inode settings */
 int root_mode_opt = FALSE;
-mode_t root_mode;
+struct mode_data *root_mode;
 int root_uid_opt = FALSE;
 unsigned int root_uid;
 int root_gid_opt = FALSE;
@@ -111,7 +112,11 @@ unsigned int root_gid;
 unsigned int root_time;
 int root_time_opt = FALSE;
 
-/* Values that override uids and gids for all files and directories */
+/* Options which override inode settings for all files and directories */
+int global_file_mode_opt = FALSE;
+struct mode_data *global_file_mode;
+int global_dir_mode_opt = FALSE;
+struct mode_data *global_dir_mode;
 int global_uid_opt = FALSE;
 unsigned int global_uid;
 int global_gid_opt = FALSE;
@@ -352,7 +357,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", "info-file", NULL
+	"hs", "info-file", "force-file-mode", "force-dir-mode", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -361,7 +366,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
-	NULL
+	"force-file-mode", "force-dir-mode", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -1046,6 +1051,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	int nlink = dir_ent->inode->nlink;
 	int xattr = read_xattrs(dir_ent, type);
 	unsigned int uid, gid;
+	mode_t mode;
 
 	switch(type) {
 	case SQUASHFS_FILE_TYPE:
@@ -1081,6 +1087,18 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		break;
 	}
 
+	if(type != SQUASHFS_DIR_TYPE  && type != SQUASHFS_LDIR_TYPE) {
+		if(!pseudo_override && global_file_mode_opt)
+			mode = mode_execute(global_file_mode, buf->st_mode);
+		else
+			mode = buf->st_mode;
+	} else {
+		if(!pseudo_override && global_dir_mode_opt)
+			mode = mode_execute(global_dir_mode, buf->st_mode);
+		else
+			mode = buf->st_mode;
+	}
+
 	if(!pseudo_override && global_uid_opt)
 		uid = global_uid;
 	else
@@ -1091,7 +1109,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	else
 		gid = buf->st_gid;
 
-	base->mode = SQUASHFS_MODE(buf->st_mode);
+	base->mode = SQUASHFS_MODE(mode);
 	base->inode_type = type;
 	base->uid = get_uid(uid);
 	base->guid = get_guid(gid);
@@ -3668,8 +3686,11 @@ static squashfs_inode scan_single(char *pathname, int progress)
 		/* source directory has disappeared? */
 		BAD_ERROR("Cannot stat source directory %s because %s\n",
 						pathname, strerror(errno));
-	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
+	if(global_dir_mode_opt) {
+		if(pseudo_override)
+			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+	} else if(root_mode_opt)
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
@@ -3712,10 +3733,12 @@ static squashfs_inode scan_encomp(int progress)
 	 * command line
 	 */
 	memset(&buf, 0, sizeof(buf));
-	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
-	else
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+	if(global_dir_mode_opt) {
+		if(pseudo_override)
+			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+	} else if(root_mode_opt)
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else
@@ -4091,8 +4114,12 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if(pseudo_override && global_gid_opt)
 			buf->st_gid = global_gid;
 			
-		if((buf->st_mode & S_IFMT) == S_IFDIR)
+		if((buf->st_mode & S_IFMT) == S_IFDIR) {
+			if(pseudo_override && global_dir_mode_opt)
+				buf->st_mode = mode_execute(global_dir_mode, buf->st_mode);
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
+		} else if(pseudo_override && global_file_mode_opt)
+			buf->st_mode = mode_execute(global_file_mode, buf->st_mode);
 	}
 
 	/*
@@ -4455,7 +4482,7 @@ static void dir_scan6(struct dir_info *dir)
 
 
 /*
- * dir_scan6 routines...
+ * dir_scan7 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
 static void scan7_init_dir(struct directory *dir)
@@ -5115,8 +5142,12 @@ static squashfs_inode process_source(int progress)
 		 * top level directory
 		 */
 		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR :
-				S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		if(global_dir_mode_opt) {
+			if(pseudo_override)
+				buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+		} else if(root_mode_opt)
+			buf.st_mode = mode_execute(root_mode, buf.st_mode);
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
 		else
@@ -5138,8 +5169,11 @@ static squashfs_inode process_source(int progress)
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
-		if(root_mode_opt)
-			buf.st_mode = root_mode | S_IFDIR;
+		if(global_dir_mode_opt) {
+			if(pseudo_override)
+				buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+		} else if(root_mode_opt)
+			buf.st_mode = mode_execute(root_mode, buf.st_mode);
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
 		if(root_gid_opt)
@@ -5199,11 +5233,9 @@ static squashfs_inode no_sources(int progress)
 
 	memset(&buf, 0, sizeof(buf));
 
-	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
-	else
-		buf.st_mode = pseudo_ent->dev->buf->mode;
-
+	buf.st_mode = pseudo_ent->dev->buf->mode;
+	if(root_mode_opt && !global_dir_mode_opt)
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else
@@ -5954,14 +5986,14 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 }
 
 
-static int _parse_numberll(char *start, long long *res, int size, int base)
+static int parse_numberll(char *start, long long *res, int size)
 {
 	char *end;
 	long long number;
 
 	errno = 0; /* To distinguish success/failure after call */
 
-	number = strtoll(start, &end, base);
+	number = strtoll(start, &end, 10);
 
 	/*
 	 * check for strtoll underflow or overflow in conversion, and other
@@ -6053,17 +6085,11 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 }
 
 
-static int parse_numberll(char *start, long long *res, int size)
-{
-	return _parse_numberll(start, res, size, 10);
-}
-
-
 static int parse_number(char *start, int *res, int size)
 {
 	long long number;
 
-	if(!_parse_numberll(start, &number, size, 10))
+	if(!parse_numberll(start, &number, size))
 		return 0;
 	
 	/* check if long result will overflow signed int */
@@ -6079,7 +6105,7 @@ static int parse_number_unsigned(char *start, unsigned int *res, int size)
 {
 	long long number;
 
-	if(!_parse_numberll(start, &number, size, 10))
+	if(!parse_numberll(start, &number, size))
 		return 0;
 	
 	/* check if long result will overflow unsigned int */
@@ -6100,21 +6126,6 @@ static int parse_num(char *arg, int *res)
 static int parse_num_unsigned(char *arg, unsigned int *res)
 {
 	return parse_number_unsigned(arg, res, 0);
-}
-
-
-static int parse_mode(char *arg, mode_t *res)
-{
-	long long number;
-
-	if(!_parse_numberll(arg, &number, 0, 8))
-		return 0;
-
-	if(number > 07777)
-		return 0;
-
-	*res = (mode_t) number;
-	return 1;
 }
 
 
@@ -6491,7 +6502,7 @@ static int sqfstar(int argc, char *argv[])
 			if(!comp->supported) {
 				ERROR("sqfstar: Compressor \"%s\" is not supported!\n", argv[i]);
 				ERROR("sqfstar: Compressors available:\n");
-				display_compressors(stderr, "", COMP_DEFAULT);
+				display_compressors();
 				exit(1);
 			}
 			if(compressor_opt_parsed) {
@@ -6594,7 +6605,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("sqfstar: -root-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+					" symbolic mode or octal number expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_mode_opt = TRUE;
@@ -6641,7 +6652,7 @@ static int sqfstar(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &default_mode)) {
 				ERROR("sqfstar: -default-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+					" symbolic mode or octal number expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_mode = default_mode;
@@ -6867,6 +6878,20 @@ static int sqfstar(int argc, char *argv[])
 				strcmp(argv[i], "-root-owned") == 0) {
 			global_uid = global_gid = 0;
 			global_uid_opt = global_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-file-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_file_mode)) {
+				ERROR("sqfstar: -force-file-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+			global_file_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_dir_mode)) {
+				ERROR("sqfstar: -force-dir-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == dest_index) {
 				ERROR("sqfstar: -force-uid missing uid or user name\n");
@@ -7376,7 +7401,7 @@ int main(int argc, char *argv[])
 				ERROR("mksquashfs: Compressor \"%s\" is not "
 					"supported!\n", argv[j]);
 				ERROR("mksquashfs: Compressors available:\n");
-				display_compressors(stderr, "", COMP_DEFAULT);
+				display_compressors();
 				exit(1);
 			}
 			if(prev_comp != NULL && prev_comp != comp) {
@@ -7536,7 +7561,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("mksquashfs: -root-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+					" symbolic mode or octal number expected\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_mode_opt = TRUE;
@@ -7583,7 +7608,7 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &default_mode)) {
 				ERROR("mksquashfs: -default-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+					" symbolic mode or octal number expected\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_mode = default_mode;
@@ -7939,6 +7964,20 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-root-owned") == 0) {
 			global_uid = global_gid = 0;
 			global_uid_opt = global_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-file-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_file_mode)) {
+				ERROR("mksquashfs: -force-file-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			global_file_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_dir_mode)) {
+				ERROR("mksquashfs: -force-dir-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -force-uid missing uid or user name\n");

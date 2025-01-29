@@ -1,11 +1,11 @@
 include $(ROOTDIR)/rules.mk
 
 PKG_NAME:=sqlite
-PKG_VERSION:=3460100
+PKG_VERSION:=3480000
 
 PKG_SOURCE:=$(PKG_NAME)-autoconf-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://www.sqlite.org/2024/
-PKG_HASH:=67d3fe6d268e6eaddcae3727fce58fcc8e9c53869bdd07a0c61e38ddf2965071
+PKG_SOURCE_URL:=https://www.sqlite.org/2025/
+PKG_HASH:=ac992f7fca3989de7ed1fe99c16363f848794c8c32a158dafd4eb927a2e02fd5
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-autoconf-$(PKG_VERSION)
 

@@ -54,7 +54,7 @@
                // 获取 "IPv4 黑名单：" 之后的所有内容
                const blacklistContent = lastValidBlock.split('IPv4 黑名单：')[1].trim();
                
-               return `${timestamp}\nIPv4 黑名单：\n${blacklistContent}`;
+               return `${timestamp} IPv4 黑名单：\n${blacklistContent}`;
                
            } catch(e) {
                console.error('处理日志错误:', e);

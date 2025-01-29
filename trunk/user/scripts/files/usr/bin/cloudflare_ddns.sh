@@ -8,6 +8,16 @@ E_API=3
 E_PARAM=4
 E_SYSTEM=5
 
+# API URL 定义
+API_BASE_URL="https://api.cloudflare.com/client/v4"
+API_ZONES_URL="$API_BASE_URL/zones"
+get_dns_records_url() {
+    echo "$API_ZONES_URL/$1/dns_records"
+}
+get_dns_record_url() {
+    echo "$API_ZONES_URL/$1/dns_records/$2"
+}
+
 # 动态获取所需命令
 CURL=$(which curl 2>/dev/null)
 GREP=$(which grep 2>/dev/null)
@@ -143,7 +153,8 @@ health_check() {
     fi
 }
 
-# 改进的网络请求函数
+# 改进的网络请求函数，使用curl
+# 改进的网络请求函数，使用curl
 curl_with_timeout() {
     url=$1
     shift
@@ -154,15 +165,20 @@ curl_with_timeout() {
     while [ $retry_count -lt $max_retries ]; do
         if echo "$CURL" | $GREP -q "^busybox"; then
             # 如果是 busybox curl，移除不支持的选项
-            response=$($CURL -s \
+            response=$($CURL -s -k \
+                      --retry 2 \
+                      --retry-delay 1 \
                       "$@" \
                       "$url")
         else
             # 如果是完整版 curl，使用所有选项
-            response=$($CURL --silent \
+            response=$($CURL --silent -k \
                            --max-time 10 \
                            --retry 2 \
                            --retry-delay 1 \
+                           --tlsv1.0 \
+                           --tls-max 1.2 \
+                           --ciphers DEFAULT@SECLEVEL=1 \
                            "$@" \
                            "$url")
         fi
@@ -313,35 +329,35 @@ set_auth_headers() {
 get_current_ip() {
     ip=""
     
-    # 尝试从 3322.org 获取IP
+    # 尝试从 ip.3322.net 获取IP
     if [ -z "$ip" ]; then
-        ip=$(curl_with_timeout "http://members.3322.org/dyndns/getip" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
+        ip=$(wget -qO- "http://ip.3322.net" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
         if [ ! -z "$ip" ]; then
-            log_message "信息" "从 3322.org 获取到IP: $ip"
+            log_message "信息" "从 ip.3322.net 获取到IP: $ip"
         else
-            log_message "警告" "从 3322.org 获取IP失败，尝试下一个源"
+            log_message "警告" "从 ip.3322.net 获取IP失败，尝试下一个源"
             sleep 1
         fi
     fi
     
-    # 如果上一个失败，尝试从 ipip.net 获取IP
+    # 尝试从 ifconfig.me 获取IP
     if [ -z "$ip" ]; then
-        ip=$(curl_with_timeout "http://myip.ipip.net" | $GREP "当前 IP" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
+        ip=$(wget -qO- "http://ifconfig.me/ip" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
         if [ ! -z "$ip" ]; then
-            log_message "信息" "从 ipip.net 获取到IP: $ip"
+            log_message "信息" "从 ifconfig.me 获取到IP: $ip"
         else
-            log_message "警告" "从 ipip.net 获取IP失败，尝试下一个源"
+            log_message "警告" "从 ifconfig.me 获取IP失败，尝试下一个源"
             sleep 1
         fi
     fi
     
-    # 如果前两个都失败，尝试从 oray.com 获取IP
+    # 最后从 ident.me 获取IP
     if [ -z "$ip" ]; then
-        ip=$(curl_with_timeout "http://ddns.oray.com/checkip" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
+        ip=$(wget -qO- "http://ident.me" | $GREP -E -o '([0-9]+\.){3}[0-9]+' | head -n1)
         if [ ! -z "$ip" ]; then
-            log_message "信息" "从 oray.com 获取到IP: $ip"
+            log_message "信息" "从 ident.me 获取到IP: $ip"
         else
-            log_message "警告" "从 oray.com 获取IP失败"
+            log_message "警告" "从 ident.me 获取IP失败"
             sleep 1
         fi
     fi
@@ -361,26 +377,34 @@ get_zone_id() {
     local retry=1
     while [ $retry -le 2 ]; do
         response=""
+        log_message "调试" "开始获取Zone ID..."
+        
         if [ ! -z "$API_TOKEN" ]; then
-            response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones" \
+            log_message "调试" "使用API Token发起请求..."
+            response=$(curl_with_timeout "$API_ZONES_URL" \
                 -H "Content-Type: application/json" \
-                -H "$AUTH_HEADER")
+                -H "$AUTH_HEADER" \
+                -k -v 2>&1)
         else
-            response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones" \
+            log_message "调试" "使用Email/API Key发起请求..."
+            response=$(curl_with_timeout "$API_ZONES_URL" \
                 -H "Content-Type: application/json" \
                 -H "$AUTH_HEADER_EMAIL" \
-                -H "$AUTH_HEADER_KEY")
+                -H "$AUTH_HEADER_KEY" \
+                -k -v 2>&1)
         fi
         
+        # 调试的时候使用
+        # log_message "调试" "API响应: $response"
+        
         if [ $? -ne 0 ]; then
+            log_message "警告" "请求失败，HTTP状态码: $?"
             retry=$((retry + 1))
             continue
         fi
         
-        # 调试输出
-        # log_message "调试" "API响应: $response"
-        
-        ZONE_ID=$(echo "$response" | $AWK -F'"' '/"id":"[^"]*","name":"'"$DOMAIN"'"/{print $4; exit}')
+        # 使用更精确的方式提取Zone ID
+        ZONE_ID=$(echo "$response" | $GREP -o '"id":"[^"]*","name":"'$DOMAIN'"' | $GREP -o '"id":"[^"]*"' | $CUT -d'"' -f4)
         
         if [ ! -z "$ZONE_ID" ]; then
             log_message "信息" "获取到Zone ID: $ZONE_ID"
@@ -388,6 +412,10 @@ get_zone_id() {
         fi
         
         log_message "警告" "获取Zone ID失败，第 $retry 次尝试（共2次）"
+        
+        # 调试的时候使用
+        # log_message "调试" "完整响应内容: $response"
+        
         retry=$((retry + 1))
         sleep 3
     done
@@ -399,12 +427,14 @@ get_zone_id() {
 # 处理重复DNS记录
 handle_duplicate_records() {
     local response=""
+    local dns_records_url=$(get_dns_records_url "$ZONE_ID")"?type=A&name=$FULL_DOMAIN"
+
     if [ ! -z "$API_TOKEN" ]; then
-        local records_response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        local records_response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER")
     else
-        local records_response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        local records_response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER_EMAIL" \
             -H "$AUTH_HEADER_KEY")
@@ -422,12 +452,12 @@ handle_duplicate_records() {
         for id in $record_ids; do
             if [ "$id" != "$latest_id" ]; then
                 if [ ! -z "$API_TOKEN" ]; then
-                    local delete_response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$id" \
+                    local delete_response=$(curl_with_timeout "$(get_dns_record_url "$ZONE_ID" "$id")" \
                         -H "Content-Type: application/json" \
                         -H "$AUTH_HEADER" \
                         -X DELETE)
                 else
-                    local delete_response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$id" \
+                    local delete_response=$(curl_with_timeout "$(get_dns_record_url "$ZONE_ID" "$id")" \
                         -H "Content-Type: application/json" \
                         -H "$AUTH_HEADER_EMAIL" \
                         -H "$AUTH_HEADER_KEY" \
@@ -442,12 +472,14 @@ handle_duplicate_records() {
 # 获取当前DNS记录
 get_dns_record() {
     local response=""
+    local dns_records_url=$(get_dns_records_url "$ZONE_ID")"?type=A&name=$FULL_DOMAIN"
+
     if [ ! -z "$API_TOKEN" ]; then
-        response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER")
     else
-        response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER_EMAIL" \
             -H "$AUTH_HEADER_KEY")
@@ -458,11 +490,11 @@ get_dns_record() {
     
     # 重新获取记录（确保获取清理后的记录）
     if [ ! -z "$API_TOKEN" ]; then
-        response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER")
     else
-        response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$FULL_DOMAIN" \
+        response=$(curl_with_timeout "$dns_records_url" \
             -H "Content-Type: application/json" \
             -H "$AUTH_HEADER_EMAIL" \
             -H "$AUTH_HEADER_KEY")
@@ -485,12 +517,12 @@ update_dns_record() {
             log_message "信息" "正在创建新的DNS记录..."
             local response=""
             if [ ! -z "$API_TOKEN" ]; then
-                response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                response=$(curl_with_timeout "$(get_dns_records_url "$ZONE_ID")" \
                     -H "Content-Type: application/json" \
                     -H "$AUTH_HEADER" \
                     --data "{\"type\":\"A\",\"name\":\"$HOST\",\"content\":\"$CURRENT_IP\",\"ttl\":1,\"proxied\":false}")
             else
-                response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+                response=$(curl_with_timeout "$(get_dns_records_url "$ZONE_ID")" \
                     -H "Content-Type: application/json" \
                     -H "$AUTH_HEADER_EMAIL" \
                     -H "$AUTH_HEADER_KEY" \
@@ -500,13 +532,13 @@ update_dns_record() {
             log_message "信息" "正在更新DNS记录..."
             local response=""
             if [ ! -z "$API_TOKEN" ]; then
-                response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                response=$(curl_with_timeout "$(get_dns_record_url "$ZONE_ID" "$RECORD_ID")" \
                     -H "Content-Type: application/json" \
                     -H "$AUTH_HEADER" \
                     -X PUT \
                     --data "{\"type\":\"A\",\"name\":\"$HOST\",\"content\":\"$CURRENT_IP\",\"ttl\":1,\"proxied\":false}")
             else
-                response=$(curl_with_timeout "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                response=$(curl_with_timeout "$(get_dns_record_url "$ZONE_ID" "$RECORD_ID")" \
                     -H "Content-Type: application/json" \
                     -H "$AUTH_HEADER_EMAIL" \
                     -H "$AUTH_HEADER_KEY" \

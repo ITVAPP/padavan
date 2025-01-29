@@ -25,25 +25,37 @@
        var $j = jQuery.noConflict();
 
        function processLogContent(content) {
-           if (!content || content.trim() === "") return "暂无屏蔽名单数据";
+           if (!content || content.trim() === "") {
+               return "暂无屏蔽名单数据";
+           }
            
            try {
-               // 找到最后一次出现 IPv4 黑名单的位置
-               const dateIndex = content.lastIndexOf("CST\n");
-               if (dateIndex === -1) return "暂无屏蔽名单数据";
+               // 将内容按分隔符分割成块
+               const blocks = content.split('***************************************');
                
-               // 获取日期往后的内容
-               const blockStart = content.indexOf("IPv4 黑名单：", dateIndex);
-               if (blockStart === -1) return "暂无屏蔽名单数据";
+               // 查找最后一个包含 "IPv4 黑名单：" 的有效块
+               let lastValidBlock = null;
+               for (let i = blocks.length - 1; i >= 0; i--) {
+                   const block = blocks[i].trim();
+                   if (block.includes('IPv4 黑名单：')) {
+                       lastValidBlock = block;
+                       break;
+                   }
+               }
                
-               // 找到下一个分隔符的位置
-               const blockEnd = content.indexOf("***************************************", blockStart);
+               if (!lastValidBlock) {
+                   return "暂无屏蔽名单数据";
+               }
                
-               // 提取日期和黑名单内容
-               const timestamp = content.substring(dateIndex - 20, dateIndex + 3);
-               const blacklist = content.substring(blockStart, blockEnd !== -1 ? blockEnd : undefined);
+               // 提取时间戳和黑名单内容
+               const timestampMatch = lastValidBlock.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]{3,4}/);
+               const timestamp = timestampMatch ? timestampMatch[0] : "";
                
-               return timestamp + "\n" + blacklist;
+               // 获取 "IPv4 黑名单：" 之后的所有内容
+               const blacklistContent = lastValidBlock.split('IPv4 黑名单：')[1].trim();
+               
+               return `${timestamp}\nIPv4 黑名单：\n${blacklistContent}`;
+               
            } catch(e) {
                console.error('处理日志错误:', e);
                return "处理日志时发生错误";

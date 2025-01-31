@@ -54,11 +54,12 @@ find_bin() {
 }
 
 run_bin() {
-	(if [ "$(nvram get ss_cgroups)" = "1" ]; then
-	 	echo 0 > /sys/fs/cgroup/cpu/$NAME/tasks
-	 	echo 0 > /sys/fs/cgroup/memory/$NAME/tasks
-	 fi
-	 "$@" > /dev/null 2>&1
+	(
+		if [ "$(nvram get ss_cgroups)" = "1" ]; then
+			echo $$ > /sys/fs/cgroup/cpu/$NAME/tasks
+			echo $$ > /sys/fs/cgroup/memory/$NAME/tasks
+		fi
+		exec "$@" > /dev/null 2>&1
 	) &
 }
 

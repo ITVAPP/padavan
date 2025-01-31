@@ -490,9 +490,6 @@ domain-needed
 ### 阻止私有地址范围的查询转发
 bogus-priv
 
-### 禁用 /etc/resolv.conf 中的上游 DNS，仅使用此配置
-no-resolv
-
 ### Web Proxy 自动发现 (WPAD)
 dhcp-option=252,"\n"
 

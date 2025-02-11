@@ -570,7 +570,7 @@ struct nvram_pair router_defaults[] = {
 	{ "ss_run_mode", "gfw" }, 	 	//gfw router all oversea
 	{ "s_dports", "1" },
 	{ "lan_con", "0" },
-	{ "pdnsd_enable", "1" },
+	{ "pdnsd_enable", "0" },
 	{ "ss_chdns", "0" },
 	{ "china_dns", "223.5.5.5#53" },
 	{ "tunnel_forward", "8.8.8.8#53" },
@@ -1211,34 +1211,26 @@ struct nvram_pair tables_defaults[] = {
 	{ "dhcp_staticmac_x", "" },
 	{ "dhcp_staticip_x", "" },
 	{ "dhcp_staticname_x", "" },
-
 	{"pppoemwan_mac_x", "" },
 	{"pppoemwan_ip_x", "" },
 	{"pppoemwan_name_x", "" },
 	{"pppoemwan_interface_x", "" },
-
 	{"adbybyip_mac_x", "" },
 	{"adbybyip_ip_x", "" },
 	{"adbybyip_name_x", "" },
 	{"adbybyip_ip_road_x", "" },
-
 	{"adbybyrules_x", "" },
 	{"adbybyrules_road_x", "" },
-
 	{ "vpns_user_x", "" },
 	{ "vpns_pass_x", "" },
 	{ "vpns_addr_x", "" },
 	{ "vpns_rnet_x", "" },
 	{ "vpns_rmsk_x", "" },
-
 	{ "wl_maclist_x", "" },
 	{ "wl_macdesc_x", "" },
-
 	{ "rt_maclist_x", "" },
 	{ "rt_macdesc_x", "" },
-
 	{ "wl_wdslist_x", "" },
 	{ "rt_wdslist_x", "" },
-
 	{ 0, 0 }
 };

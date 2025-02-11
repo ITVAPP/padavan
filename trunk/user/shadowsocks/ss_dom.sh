@@ -27,7 +27,6 @@ workers.dev
 pornmd.com
 opera.com
 p16-tiktokcdn-com.akamaized.net
--tiktokcdn-com
 bytegecko.com
 bytegecko-i18n.com
 bytedapm.com
@@ -81,7 +80,16 @@ capcutapi.com
 r3sub.com
 katfile.com
 apk.tw
-tv6868.com
 claude.ai
-anthropic.com
 claudeusercontent.com
+cdn.usefathom.com
+openai-api.arkoselabs.com
+openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
+production-openaicom-storage.azureedge.net
+api.statsig.com
+chatgpt.livekit.cloud
+client-api.arkoselabs.com
+events.statsigapi.net
+host.livekit.cloud
+openaiapi-site.azureedge.net
+turn.livekit.cloud
